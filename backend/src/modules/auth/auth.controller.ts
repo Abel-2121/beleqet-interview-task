@@ -45,7 +45,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get authenticated user profile' })
   me(@Request() req: Express.Request & { user: { userId: string; email: string; role: string } }) {
-    return req.user;
+    return this.authService.getProfile(req.user.userId);
   }
 
   @Post('verify-email')

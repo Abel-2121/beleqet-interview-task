@@ -417,6 +417,28 @@ class ApiClient {
     });
   }
 
+  // CV endpoints
+  async generateCvSummary(data: { title?: string; skills: string[]; experience: { role: string; company: string; description: string }[] }) {
+    return this.request<{ summary: string }>('/cv/generate-summary', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async improveDescription(data: { role: string; company: string; description: string }) {
+    return this.request<{ improved: string }>('/cv/improve-description', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async suggestSkills(data: { title?: string; experience: { role: string; company: string; description: string }[] }) {
+    return this.request<{ skills: string[] }>('/cv/suggest-skills', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Wallet endpoints
   async getWallet() {
     return this.request<Wallet>('/wallet');

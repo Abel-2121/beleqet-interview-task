@@ -22,6 +22,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { CvModule } from './modules/cv/cv.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
     TelegramModule,
     SavedJobsModule,
     PaymentsModule,
+    CvModule,
   ],
 })
 export class AppModule {}

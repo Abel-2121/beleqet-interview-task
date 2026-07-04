@@ -42,6 +42,7 @@ interface JobPosting {
   title: string;
 }
 
+/** Applications list page: job seekers see their own apps, employers see apps for their jobs */
 export default function ApplicationsPage() {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -52,6 +53,7 @@ export default function ApplicationsPage() {
 
   const isEmployer = user?.role === 'EMPLOYER' || user?.role === 'ADMIN';
 
+  // Load data based on user role (seeker vs employer)
   useEffect(() => {
     if (isEmployer) {
       loadEmployerData();
@@ -60,6 +62,7 @@ export default function ApplicationsPage() {
     }
   }, [isEmployer, selectedJobId]);
 
+  /** Fetch applications submitted by the current job seeker */
   const loadSeekerApplications = async () => {
     try {
       setLoading(true);
@@ -72,6 +75,7 @@ export default function ApplicationsPage() {
     }
   };
 
+  /** Fetch employer's jobs and applications for the selected job */
   const loadEmployerData = async () => {
     try {
       setLoading(true);
@@ -92,6 +96,7 @@ export default function ApplicationsPage() {
     }
   };
 
+  /** Update an application's status (employer action) */
   const updateStatus = async (appId: string, status: string) => {
     try {
       await api.updateApplicationStatus(appId, status);

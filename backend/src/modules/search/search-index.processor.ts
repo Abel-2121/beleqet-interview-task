@@ -4,6 +4,7 @@ import { Job as BullJob } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QUEUE_NAMES } from '../queues/queues.constants';
 
+/** Payload for search index queue jobs — specifies action, entity type, and entity ID */
 interface IndexJobPayload {
   action: 'upsert' | 'delete';
   entityType: 'job' | 'freelance_job';
@@ -29,6 +30,7 @@ export class SearchIndexProcessor {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Processes index-job actions: fetches entity from Postgres and indexes/deletes in OpenSearch */
   @Process('index-job')
   async indexJob(job: BullJob<IndexJobPayload>) {
     const { action, entityType, entityId } = job.data;

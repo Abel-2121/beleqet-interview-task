@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { Request, Response } from 'express';
 
+/** REST controller for initiating escrow, handling Chapa callbacks, and releasing milestones */
 @ApiTags('escrow')
 @Controller('escrow')
 export class EscrowController {
@@ -29,6 +30,7 @@ export class EscrowController {
     private readonly config: ConfigService,
   ) {}
 
+  /** POST /escrow/initiate/:gigId — Start escrow for a gig; returns a Chapa checkout URL */
   @Post('initiate/:gigId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -36,13 +38,14 @@ export class EscrowController {
     return this.svc.initiate(u.userId, gigId);
   }
 
+  /** GET /escrow/status/:txRef — Return escrow status (pending / funded) for a transaction reference */
   @Get('status/:txRef')
   @ApiOperation({ summary: 'Get escrow status by Chapa tx_ref' })
   getStatus(@Param('txRef') txRef: string) {
     return this.svc.getEscrowStatus(txRef);
   }
 
-  /** Browser return from Chapa — verify server-side then redirect to frontend */
+  /** GET /escrow/return — Browser redirect from Chapa; verifies payment and redirects to frontend */
   @Get('return')
   async handleReturn(@Query('tx_ref') txRef: string, @Res() res: Response) {
     const frontend = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
@@ -66,7 +69,7 @@ export class EscrowController {
     }
   }
 
-  /** Chapa webhook — verify signature (prod) then verify payment server-side */
+  /** POST /escrow/callback — Chapa webhook; verifies HMAC signature (in production) and processes payment */
   @Post('callback')
   @HttpCode(HttpStatus.OK)
   async webhook(
@@ -100,6 +103,7 @@ export class EscrowController {
     return { received: true };
   }
 
+  /** POST /escrow/milestones/:id/release — Release escrow funds for an approved milestone */
   @Post('milestones/:id/release')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

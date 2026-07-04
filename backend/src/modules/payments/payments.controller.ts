@@ -21,6 +21,7 @@ import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current
 import { PaymentsService } from './payments.service';
 import { InitiatePlanDto } from './dto/initiate-plan.dto';
 
+/** Handles HTTP routes for employer plan payments and Chapa webhook callbacks */
 @ApiTags('payments')
 @Controller('payments')
 export class PaymentsController {
@@ -29,12 +30,14 @@ export class PaymentsController {
     private readonly config: ConfigService,
   ) {}
 
+  /** Returns all available employer pricing plans */
   @Get('plans')
   @ApiOperation({ summary: 'List employer pricing plans' })
   listPlans() {
     return this.svc.getPlans();
   }
 
+  /** Initiates a Chapa checkout session for the selected employer plan */
   @Post('plans/checkout')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -43,6 +46,7 @@ export class PaymentsController {
     return this.svc.initiatePlanCheckout(user.userId, body.planId);
   }
 
+  /** Redirects the user after Chapa payment with success/failure status */
   @Get('plans/return')
   async handleReturn(
     @Query('tx_ref') txRef: string,
@@ -70,6 +74,7 @@ export class PaymentsController {
     }
   }
 
+  /** Receives Chapa webhook callbacks to verify asynchronous payment notifications */
   @Post('plans/callback')
   @HttpCode(HttpStatus.OK)
   async webhook(

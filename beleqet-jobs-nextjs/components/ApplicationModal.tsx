@@ -14,6 +14,7 @@ interface ApplicationModalProps {
   onSuccess?: () => void;
 }
 
+/** Modal overlay wrapping ApplicationForm for applying or editing a job application. */
 export default function ApplicationModal({
   isOpen,
   onClose,
@@ -25,6 +26,7 @@ export default function ApplicationModal({
 }: ApplicationModalProps) {
   if (!isOpen) return null;
 
+  // Auto-close modal after success
   const handleSuccess = () => {
     onSuccess?.();
     setTimeout(() => {

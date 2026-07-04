@@ -13,6 +13,7 @@ interface ApplicationFormProps {
   onSuccess?: () => void;
 }
 
+/** Job application form with cover letter textarea, resume upload/link, and submission handling. */
 export default function ApplicationForm({
   jobId,
   jobTitle,
@@ -30,6 +31,7 @@ export default function ApplicationForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Validate file type and size before setting
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -49,6 +51,7 @@ export default function ApplicationForm({
     setResumeUrl('');
   };
 
+  // Validate, upload resume if needed, then submit or update application
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -105,6 +108,7 @@ export default function ApplicationForm({
     }
   };
 
+  // Show success confirmation after submission
   if (success) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">

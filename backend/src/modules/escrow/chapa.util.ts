@@ -1,3 +1,4 @@
+/** Read the Chapa secret key from config, trying test key first then live key */
 export function getChapaSecret(env: { get: (key: string) => string | undefined }): string {
   return (
     env.get('CHAPA_TEST_SECRET_KEY') ||
@@ -6,11 +7,13 @@ export function getChapaSecret(env: { get: (key: string) => string | undefined }
   );
 }
 
+/** Build a Chapa transaction reference in the format BLQ-<shortId>-<timestamp> */
 export function buildTxRef(escrowId: string): string {
   const shortId = escrowId.replace(/-/g, '').slice(0, 10);
   return `BLQ-${shortId}-${Date.now()}`;
 }
 
+/** Extract an escrow ID from a legacy BELEQET- prefixed tx_ref or return null for BLQ- format */
 export function parseEscrowIdFromTxRef(txRef: string): string | null {
   const prefixed = txRef.match(/^BLQ-([0-9a-f]{10})-/i);
   if (prefixed) {
@@ -23,6 +26,7 @@ export function parseEscrowIdFromTxRef(txRef: string): string | null {
   return null;
 }
 
+/** Normalize an Ethiopian phone number to the +251 format expected by Chapa */
 export function formatPhoneForChapa(phone?: string | null): string | undefined {
   if (!phone) return undefined;
   const digits = phone.replace(/\D/g, '');
@@ -32,6 +36,7 @@ export function formatPhoneForChapa(phone?: string | null): string | undefined {
   return phone.startsWith('+') ? phone : `+${digits}`;
 }
 
+/** Verify a Chapa transaction status using the Chapa verify API endpoint */
 export async function verifyChapaTransaction(
   txRef: string,
   secret: string,
@@ -48,6 +53,7 @@ export async function verifyChapaTransaction(
   return { ok, data };
 }
 
+/** Initialize a Chapa checkout session and return the checkout URL or error message */
 export async function initializeChapaCheckout(
   secret: string,
   payload: Record<string, unknown>,

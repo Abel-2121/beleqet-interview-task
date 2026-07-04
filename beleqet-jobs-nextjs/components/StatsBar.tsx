@@ -6,6 +6,7 @@ import { motion, useInView } from 'framer-motion';
 import { api } from '@/lib/api';
 import { staggerContainer, staggerItem } from '@/lib/motion';
 
+// Map stat keys to Lucide icon components
 const iconMap: Record<string, LucideIcon> = {
   briefcase: Briefcase,
   'building-2': Building2,
@@ -13,6 +14,7 @@ const iconMap: Record<string, LucideIcon> = {
   smile: Smile,
 };
 
+/** Animated stats bar showing live counts of jobs, companies, candidates, and applications. */
 export default function StatsBar() {
   const [stats, setStats] = useState([
     { label: 'Live Jobs', value: '—', icon: 'briefcase' },

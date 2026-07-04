@@ -6,17 +6,20 @@ import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from './dto/register.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+/** Handles authentication endpoints: register, login, token refresh, email verification, and password reset. */
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /** Register a new user account and return JWT tokens. */
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  /** Authenticate user credentials and return JWT tokens. */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login and receive JWT tokens' })
@@ -25,6 +28,7 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  /** Issue a new access token using a valid refresh token. */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
@@ -32,6 +36,7 @@ export class AuthController {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  /** Invalidate all refresh tokens for the authenticated user. */
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
@@ -40,6 +45,7 @@ export class AuthController {
     return this.authService.logout(req.user.userId);
   }
 
+  /** Return the authenticated user's profile. */
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -48,6 +54,7 @@ export class AuthController {
     return this.authService.getProfile(req.user.userId);
   }
 
+  /** Verify a user's email address using a verification token. */
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify user email via token' })
@@ -55,6 +62,7 @@ export class AuthController {
     return this.authService.verifyEmail(dto.token);
   }
 
+  /** Send a password reset link to the user's email. */
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request password reset email' })
@@ -62,6 +70,7 @@ export class AuthController {
     return this.authService.forgotPassword(dto.email);
   }
 
+  /** Reset the user's password using a valid reset token. */
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password via token' })

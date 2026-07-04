@@ -1,6 +1,7 @@
 // dto/update-user.dto.ts
 import { IsString, IsOptional, IsUrl } from 'class-validator';
 
+/** DTO for updating user profile — all fields are optional partial updates. */
 export class UpdateUserDto {
   @IsOptional() @IsString() firstName?: string;
   @IsOptional() @IsString() lastName?: string;
@@ -19,6 +20,7 @@ export class UpdateUserDto {
   @IsOptional() @IsString({ each: true }) skills?: string[];
 }
 
+/** DTO for creating or updating a company profile. */
 export class CreateCompanyDto {
   @IsString() name: string;
   @IsOptional() @IsString() description?: string;

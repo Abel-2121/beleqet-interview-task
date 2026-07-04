@@ -19,6 +19,7 @@ import { api, type JobCategory } from "@/lib/api";
 import RevealOnScroll from "@/components/RevealOnScroll";
 import { fadeLeft, fadeRight, shelfItem } from "@/lib/motion";
 
+// Map category names to Lucide icon components
 const iconMap: Record<string, LucideIcon> = {
   laptop: Laptop,
   megaphone: Megaphone,
@@ -29,6 +30,7 @@ const iconMap: Record<string, LucideIcon> = {
   "more-horizontal": MoreHorizontal,
 };
 
+// Cycling colour themes for category cards
 const CARD_THEMES = [
   {
     gradient: "from-brandGreen/20 via-success/10 to-cyanAccent/20",
@@ -52,6 +54,7 @@ const CARD_THEMES = [
   },
 ];
 
+// Infer icon key from category name keywords
 const getIconFromCategoryName = (name: string | undefined): string => {
   if (!name) return "more-horizontal";
   const lower = name.toLowerCase();
@@ -66,6 +69,7 @@ const getIconFromCategoryName = (name: string | undefined): string => {
 
 type CategoryItem = JobCategory & { name: string };
 
+/** Horizontal scrollable grid showing top job categories with themed cards. */
 export default function CategoryGrid() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +81,7 @@ export default function CategoryGrid() {
     loadCategories();
   }, []);
 
+  // Fetch and sort categories by job count, take top 4
   const loadCategories = async () => {
     try {
       setLoading(true);

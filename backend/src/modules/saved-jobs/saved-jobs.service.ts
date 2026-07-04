@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/**
+ * Business logic for saving/bookmarking jobs for later review.
+ */
 @Injectable()
 export class SavedJobsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Return all saved jobs for the given user, including job details. */
   async findByUser(userId: string) {
     const saved = await this.prisma.savedJob.findMany({
       where: { userId },
@@ -28,6 +32,7 @@ export class SavedJobsService {
     }));
   }
 
+  /** Save/bookmark a job for the user; throws if already saved. */
   async save(userId: string, jobId: string) {
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job) throw new NotFoundException('Job not found');
@@ -45,6 +50,7 @@ export class SavedJobsService {
     });
   }
 
+  /** Remove a previously saved job bookmark. */
   async remove(userId: string, jobId: string) {
     const result = await this.prisma.savedJob.deleteMany({
       where: { userId, jobId },

@@ -6,6 +6,7 @@ import { Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
 import GigCard from '@/components/GigCard';
 
+/** Shape of a freelance gig returned by the API. */
 interface FreelanceGig {
   id: string;
   title: string;
@@ -23,6 +24,10 @@ interface FreelanceGig {
   client?: { firstName?: string; lastName?: string };
 }
 
+/**
+ * Freelance gig listing page.
+ * Displays searchable, filterable grid of available gigs with a "Post a Gig" CTA.
+ */
 export default function FreelancePage() {
   const [gigs, setGigs] = useState<FreelanceGig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +38,7 @@ export default function FreelancePage() {
     fetchGigs();
   }, []);
 
+  /** Fetches all freelance gigs from the API and normalises bid counts. */
   const fetchGigs = async () => {
     try {
       setLoading(true);
@@ -49,6 +55,7 @@ export default function FreelancePage() {
     }
   };
 
+  /** Filters gigs by search query and budget range. */
   const filtered = gigs.filter((gig) => {
     const matchesSearch =
       gig.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,6 +70,7 @@ export default function FreelancePage() {
 
   return (
     <div className="container-page py-10">
+      {/* Page header: title, gig count, and "Post a Gig" button */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-pageH1">Freelance Gigs</h1>
@@ -79,6 +87,7 @@ export default function FreelancePage() {
         </Link>
       </div>
 
+      {/* Search bar and budget filter dropdown */}
       <div className="mb-8 rounded-2xl border border-border bg-white p-2 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-2">
           <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-brandGreen/20">
@@ -107,6 +116,7 @@ export default function FreelancePage() {
         </div>
       </div>
 
+      {/* Loading skeleton, empty state, or gig grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => (

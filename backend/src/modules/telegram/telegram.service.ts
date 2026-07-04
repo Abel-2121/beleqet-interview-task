@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Manages the Telegram bot lifecycle, handles /start command, and echoes text messages */
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private bot: Telegraf;
@@ -19,6 +20,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Launches the Telegram bot and registers /start and text message handlers */
   async onModuleInit() {
     if (!this.bot) {
       this.logger.warn('Valid TELEGRAM_BOT_TOKEN not provided. Telegram bot listener disabled.');
@@ -48,6 +50,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Stops the Telegram bot gracefully on application shutdown */
   onModuleDestroy() {
     if (this.bot) {
       this.bot.stop('SIGINT');

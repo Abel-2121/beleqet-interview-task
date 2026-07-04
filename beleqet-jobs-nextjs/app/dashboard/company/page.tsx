@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { Building2, Save, Loader } from 'lucide-react';
 
+/** Company profile management page for employers to update business info */
 export default function CompanyPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -20,10 +21,12 @@ export default function CompanyPage() {
     logoUrl: '',
   });
 
+  // Load existing company data on mount
   useEffect(() => {
     loadCompany();
   }, []);
 
+  /** Fetch the employer's company profile from the API */
   const loadCompany = async () => {
     try {
       const company = await api.getCompany();
@@ -45,10 +48,12 @@ export default function CompanyPage() {
     }
   };
 
+  /** Generic change handler for all form fields */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  /** Create or update company profile on form submit */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);

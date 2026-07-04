@@ -1,3 +1,4 @@
+/** Pricing success page — shows payment confirmation status after Chapa redirect. */
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
@@ -5,12 +6,14 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, XCircle, AlertCircle, Loader } from 'lucide-react';
 
+/** Maps plan slugs to display names. */
 const PLAN_NAMES: Record<string, string> = {
   basic: 'Basic',
   featured: 'Featured',
   enterprise: 'Enterprise',
 };
 
+/** Inner component that reads payment status from query params — wrapped in Suspense. */
 function PricingSuccessContent() {
   const searchParams = useSearchParams();
   const payment = searchParams.get('payment');
@@ -18,6 +21,7 @@ function PricingSuccessContent() {
   const plan = searchParams.get('plan');
   const [status, setStatus] = useState<'success' | 'failed' | 'pending' | 'error'>('pending');
 
+  // Derive status from the payment query parameter
   useEffect(() => {
     if (payment === 'success') setStatus('success');
     else if (payment === 'failed') setStatus('failed');
@@ -32,6 +36,7 @@ function PricingSuccessContent() {
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-border text-center">
           {status === 'pending' && (
+            // Spinner while waiting for payment confirmation
             <>
               <Loader className="w-16 h-16 text-brandGreen mx-auto mb-4 animate-spin" />
               <h1 className="text-2xl font-bold text-ink mb-2">Payment Initiated</h1>
@@ -42,6 +47,7 @@ function PricingSuccessContent() {
           )}
 
           {status === 'success' && (
+            // Success checkmark and message
             <>
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-ink mb-2">Payment Successful!</h1>
@@ -52,6 +58,7 @@ function PricingSuccessContent() {
           )}
 
           {status === 'failed' && (
+            // Failure icon and retry prompt
             <>
               <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-ink mb-2">Payment Failed</h1>
@@ -62,6 +69,7 @@ function PricingSuccessContent() {
           )}
 
           {status === 'error' && (
+            // Error state for unexpected issues
             <>
               <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-ink mb-2">Something went wrong</h1>
@@ -71,6 +79,7 @@ function PricingSuccessContent() {
             </>
           )}
 
+          {/* Transaction details summary */}
           {(txRef || plan) && (
             <div className="bg-pageBg rounded-xl p-5 mb-8 text-left space-y-3 text-sm">
               {plan && (
@@ -88,6 +97,7 @@ function PricingSuccessContent() {
             </div>
           )}
 
+          {/* Action links */}
           <div className="space-y-2">
             <Link
               href="/post-job"
@@ -108,6 +118,7 @@ function PricingSuccessContent() {
   );
 }
 
+/** Pricing success page — wraps content in Suspense for useSearchParams compatibility. */
 export default function PricingSuccessPage() {
   return (
     <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center text-muted">Loading...</div>}>

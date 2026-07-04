@@ -4,6 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 
+/**
+ * Bid submission page for a specific freelance gig.
+ * Collects bid amount, delivery timeline, and proposal text.
+ */
 export default function BidPage() {
   const params = useParams();
   const router = useRouter();
@@ -13,6 +17,7 @@ export default function BidPage() {
   const [proposal, setProposal] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /** Posts the bid to the API and redirects to the dashboard on success. */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -38,6 +43,7 @@ export default function BidPage() {
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Submit Your Bid</h1>
 
+        {/* Bid form with amount, timeline, and proposal fields */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Your Bid Amount (ETB)</label>
@@ -75,6 +81,7 @@ export default function BidPage() {
             />
           </div>
 
+          {/* Live summary preview of the bid before submission */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold text-gray-900 mb-2">Your Bid Summary</h3>
             <div className="space-y-2 text-sm text-gray-700">

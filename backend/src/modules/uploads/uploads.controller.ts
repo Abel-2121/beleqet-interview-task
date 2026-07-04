@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
+/** DTO for requesting a Cloudinary presigned upload URL (filename, contentType, optional folder) */
 export class PresignedUrlDto {
   @IsString()
   @IsNotEmpty()
@@ -18,6 +19,7 @@ export class PresignedUrlDto {
   folder?: string;
 }
 
+/** Handles HTTP routes for generating signed Cloudinary upload URLs */
 @ApiTags('uploads')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -25,6 +27,7 @@ export class PresignedUrlDto {
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
+  /** Generates and returns signed Cloudinary upload parameters for direct client upload */
   @Post('presigned-url')
   @ApiOperation({ summary: 'Get Cloudinary signed upload params for a file' })
   async getPresignedUrl(@Body() body: PresignedUrlDto) {

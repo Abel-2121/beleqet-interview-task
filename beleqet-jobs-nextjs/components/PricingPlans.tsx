@@ -23,6 +23,7 @@ interface PricingPlansProps {
   plans: PricingPlan[];
 }
 
+/** Pricing plans grid with feature lists, checkout modal, and Chapa payment integration. */
 export default function PricingPlans({ plans }: PricingPlansProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -36,6 +37,7 @@ export default function PricingPlans({ plans }: PricingPlansProps) {
     setError('');
   };
 
+  // Route user to login, register, contact, or open checkout modal based on plan
   const handleGetStarted = (plan: PricingPlan) => {
     setError('');
 
@@ -61,6 +63,7 @@ export default function PricingPlans({ plans }: PricingPlansProps) {
     setSelectedPlan(plan);
   };
 
+  // Process payment via API and redirect to Chapa for selected plan
   const handleCheckout = async () => {
     if (!selectedPlan) return;
 

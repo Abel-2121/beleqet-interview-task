@@ -15,12 +15,14 @@ interface AdminUser {
   isActive: boolean;
 }
 
+/** Admin-only page for managing platform users: view list and suspend accounts */
 export default function AdminUsersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Redirect non-admin users and fetch user list
   useEffect(() => {
     if (user && user.role !== 'ADMIN') {
       router.push('/dashboard');
@@ -29,6 +31,7 @@ export default function AdminUsersPage() {
     loadUsers();
   }, [user, router]);
 
+  /** Fetch the full list of platform users */
   const loadUsers = async () => {
     try {
       const data = await api.getAdminUsers();
@@ -40,6 +43,7 @@ export default function AdminUsersPage() {
     }
   };
 
+  /** Suspend a user account after confirmation */
   const handleSuspend = async (userId: string) => {
     if (!confirm('Suspend this user?')) return;
     await api.suspendUser(userId);

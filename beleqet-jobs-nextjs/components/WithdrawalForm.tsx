@@ -9,6 +9,7 @@ interface WithdrawalFormProps {
   onSuccess?: () => void;
 }
 
+/** Withdrawal request form with amount, bank details, validation, and success/error states. */
 export default function WithdrawalForm({ availableBalance, onSuccess }: WithdrawalFormProps) {
   const [formData, setFormData] = useState({
     withdrawalAmount: '',

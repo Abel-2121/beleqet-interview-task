@@ -11,6 +11,7 @@ interface RevealOnScrollProps {
   className?: string;
 }
 
+/** Wraps children in a motion div that animates in when scrolled into view. */
 export default function RevealOnScroll({
   children,
   variants = fadeUp,

@@ -1,9 +1,12 @@
 // API Client for Beleqet Backend
+
+/** Extended error with HTTP status and response payload. */
 interface ApiError extends Error {
   status?: number;
   data?: any;
 }
 
+/** HTTP client wrapping fetch with token auth, auto-refresh, and typed responses. */
 class ApiClient {
   private baseURL: string;
 
@@ -11,6 +14,7 @@ class ApiClient {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
   }
 
+  /** Generic fetch wrapper — injects auth header, parses JSON, retries on 401. */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -57,22 +61,26 @@ class ApiClient {
     }
   }
 
+  /** Read the auth token from localStorage (no-op on server). */
   private getToken(): string | null {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('authToken');
   }
 
+  /** Persist the auth token to localStorage. */
   private setToken(token: string): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem('authToken', token);
   }
 
+  /** Clear stored auth and refresh tokens. */
   private removeToken(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('authToken');
     localStorage.removeItem('refreshToken');
   }
 
+  /** Attempt to refresh the access token; redirect to login on failure. */
   private async refreshToken(): Promise<void> {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
@@ -107,7 +115,9 @@ class ApiClient {
     }
   }
 
-  // Auth endpoints
+  // ── Auth endpoints ──────────────────────────────────────────────
+
+  /** Authenticate user and store access + refresh tokens. */
   async login(email: string, password: string) {
     const response = await this.request<{
       user: User;
@@ -123,6 +133,7 @@ class ApiClient {
     return response;
   }
 
+  /** Create a new account and automatically log in. */
   async register(data: RegisterData) {
     const response = await this.request<{
       user: User;
@@ -138,6 +149,7 @@ class ApiClient {
     return response;
   }
 
+  /** End the session and clear all stored tokens. */
   async logout() {
     try {
       await this.request('/auth/logout', { method: 'POST' });
@@ -147,11 +159,14 @@ class ApiClient {
     this.removeToken();
   }
 
+  /** Fetch the currently authenticated user's profile. */
   async getProfile() {
     return this.request<User>('/auth/me');
   }
 
-  // Job endpoints
+  // ── Job endpoints ──────────────────────────────────────────────
+
+  /** List jobs with optional filters; normalises pagination format. */
   async getJobs(params: JobSearchParams = {}) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -168,10 +183,12 @@ class ApiClient {
     } as PaginatedJobs;
   }
 
+  /** Fetch a single job by its ID. */
   async getJob(id: string) {
     return this.request<JobDetail>(`/jobs/${id}`);
   }
 
+  /** Create a new job listing (employer only). */
   async createJob(data: CreateJobData) {
     const payload = {
       title: data.title,
@@ -189,10 +206,12 @@ class ApiClient {
     });
   }
 
+  /** Get aggregate dashboard counts (jobs, companies, candidates, applications). */
   async getJobStats() {
     return this.request<{ jobs: number; companies: number; candidates: number; applications: number }>('/jobs/stats');
   }
 
+  /** Fetch the current employer's own job listings. */
   async getMyJobs() {
     const response = await this.request<any>('/jobs/my');
     return {
@@ -201,12 +220,15 @@ class ApiClient {
     };
   }
 
+  /** Fetch all job categories with counts. */
   async getJobCategories() {
     const raw = await this.request<any>('/jobs/categories');
     return (Array.isArray(raw) ? raw : raw?.data || raw?.items || []) as JobCategory[];
   }
 
-  // Application endpoints
+  // ── Application endpoints ──────────────────────────────────────
+
+  /** Submit a job application with cover letter and optional resume. */
   async submitApplication(data: ApplicationData) {
     return this.request<Application>('/applications', {
       method: 'POST',
@@ -214,6 +236,7 @@ class ApiClient {
     });
   }
 
+  /** Update an existing application (e.g. change cover letter or resume). */
   async updateApplication(id: string, data: UpdateApplicationData) {
     return this.request<Application>(`/applications/${id}`, {
       method: 'PATCH',
@@ -221,6 +244,7 @@ class ApiClient {
     });
   }
 
+  /** Fetch the current user's own applications. */
   async getMyApplications() {
     const response = await this.request<any>('/applications/my');
     return {
@@ -229,14 +253,17 @@ class ApiClient {
     };
   }
 
+  /** Alias for getMyApplications(). */
   async getApplications() {
     return this.getMyApplications();
   }
 
+  /** Fetch all applications for a specific job (employer only). */
   async getJobApplications(jobId: string) {
     return this.request<Application[]>(`/applications/job/${jobId}`);
   }
 
+  /** Update the status of an application (e.g. shortlisted, rejected). */
   async updateApplicationStatus(id: string, status: string) {
     return this.request<Application>(`/applications/${id}/status`, {
       method: 'PATCH',
@@ -244,12 +271,15 @@ class ApiClient {
     });
   }
 
-  // Saved Jobs endpoints
+  // ── Saved Jobs endpoints ───────────────────────────────────────
+
+  /** Fetch all saved/bookmarked jobs. */
   async getSavedJobs() {
     const raw = await this.request<any>('/saved-jobs');
     return (Array.isArray(raw) ? raw : raw?.data || []) as SavedJob[];
   }
 
+  /** Bookmark a job for later. */
   async saveJob(jobId: string) {
     return this.request<SavedJob>('/saved-jobs', {
       method: 'POST',
@@ -257,6 +287,7 @@ class ApiClient {
     });
   }
 
+  /** Check whether a specific job is already saved. */
   async isJobSaved(jobId: string): Promise<boolean> {
     try {
       const saved = await this.getSavedJobs();
@@ -266,12 +297,14 @@ class ApiClient {
     }
   }
 
+  /** Remove a previously saved job. */
   async removeSavedJob(jobId: string) {
     return this.request<void>(`/saved-jobs/${jobId}`, {
       method: 'DELETE',
     });
   }
 
+  /** Get a presigned signature for direct Cloudinary file upload. */
   async getUploadSignature(filename: string, contentType: string, folder = 'beleqet') {
     return this.request<{
       uploadUrl: string;
@@ -285,7 +318,9 @@ class ApiClient {
     });
   }
 
-  // Freelance endpoints
+  // ── Freelance endpoints ────────────────────────────────────────
+
+  /** List freelance jobs/gigs with optional filters. */
   async getFreelanceJobs(params: JobSearchParams = {}) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -302,14 +337,17 @@ class ApiClient {
     };
   }
 
+  /** Alias for getFreelanceJobs(). */
   async getFreelanceGigs(params: any = {}) {
     return this.getFreelanceJobs(params);
   }
 
+  /** Fetch a single freelance gig by ID. */
   async getFreelanceGig(gigId: string) {
     return this.request<any>(`/freelance/jobs/${gigId}`);
   }
 
+  /** Create a new freelance gig listing. */
   async createFreelanceJob(data: CreateFreelanceJobData) {
     return this.request<FreelanceJob>('/freelance/jobs', {
       method: 'POST',
@@ -317,6 +355,7 @@ class ApiClient {
     });
   }
 
+  /** Submit a bid on a freelance gig. */
   async submitBid(data: { freelanceJobId: string; amount: number; deliveryDays: number; proposal: string }) {
     return this.request<Bid>(`/freelance/jobs/${data.freelanceJobId}/bids`, {
       method: 'POST',
@@ -328,6 +367,7 @@ class ApiClient {
     });
   }
 
+  /** Fetch all bids placed by the current freelancer. */
   async getMyBids() {
     const response = await this.request<any>('/freelance/my-bids');
     return {
@@ -336,6 +376,7 @@ class ApiClient {
     };
   }
 
+  /** Fetch all contracts for the current user. */
   async getMyContracts() {
     const response = await this.request<any>('/freelance/contracts/my');
     const list = Array.isArray(response) ? response : response.data || [];
@@ -345,13 +386,16 @@ class ApiClient {
     };
   }
 
+  /** Accept a freelancer's bid and create a contract. */
   async acceptBid(bidId: string) {
     return this.request<Contract>(`/freelance/bids/${bidId}/accept`, {
       method: 'PATCH',
     });
   }
 
-  // User endpoints
+  // ── User endpoints ─────────────────────────────────────────────
+
+  /** Update the current user's profile fields. */
   async updateProfile(data: Partial<User>) {
     return this.request<User>('/users/profile', {
       method: 'PATCH',
@@ -359,6 +403,7 @@ class ApiClient {
     });
   }
 
+  /** Create a company profile for the employer account. */
   async createCompany(data: CompanyData) {
     return this.request<Company>('/users/company', {
       method: 'POST',
@@ -366,6 +411,7 @@ class ApiClient {
     });
   }
 
+  /** Update the employer's company profile. */
   async updateCompany(data: CompanyData) {
     return this.request<Company>('/users/company', {
       method: 'PATCH',
@@ -373,10 +419,12 @@ class ApiClient {
     });
   }
 
+  /** Fetch the employer's company profile. */
   async getCompany() {
     return this.request<Company>('/users/company');
   }
 
+  /** Request a password-reset email. */
   async forgotPassword(email: string) {
     return this.request<{ success: boolean; message: string }>('/auth/forgot-password', {
       method: 'POST',
@@ -384,6 +432,7 @@ class ApiClient {
     });
   }
 
+  /** Reset password using a token received via email. */
   async resetPassword(token: string, newPassword: string) {
     return this.request<{ success: boolean; message: string }>('/auth/reset-password', {
       method: 'POST',
@@ -391,33 +440,41 @@ class ApiClient {
     });
   }
 
+  /** Admin: fetch all registered users. */
   async getAdminUsers() {
     return this.request<any[]>('/admin/users');
   }
 
+  /** Admin: suspend a user account. */
   async suspendUser(userId: string) {
     return this.request<any>(`/admin/users/${userId}/suspend`, { method: 'PATCH' });
   }
 
+  /** Fetch the current user's chat rooms. */
   async getChatRooms() {
     return this.request<any[]>('/chat/rooms');
   }
 
+  /** Fetch messages for a given chat room. */
   async getChatMessages(roomId: string) {
     return this.request<any[]>(`/chat/rooms/${roomId}/messages`);
   }
 
+  /** Fetch all notifications for the current user. */
   async getNotifications() {
     return this.request<Notification[]>('/users/notifications');
   }
 
+  /** Mark a single notification as read. */
   async markNotificationRead(id: string) {
     return this.request<void>(`/users/notifications/${id}/read`, {
       method: 'PATCH',
     });
   }
 
-  // CV endpoints
+  // ── CV endpoints ───────────────────────────────────────────────
+
+  /** Generate an AI-written professional summary for a CV. */
   async generateCvSummary(data: { title?: string; skills: string[]; experience: { role: string; company: string; description: string }[] }) {
     return this.request<{ summary: string }>('/cv/generate-summary', {
       method: 'POST',
@@ -425,6 +482,7 @@ class ApiClient {
     });
   }
 
+  /** Improve a work-experience description using AI. */
   async improveDescription(data: { role: string; company: string; description: string }) {
     return this.request<{ improved: string }>('/cv/improve-description', {
       method: 'POST',
@@ -432,6 +490,7 @@ class ApiClient {
     });
   }
 
+  /** Suggest relevant skills based on job title and experience. */
   async suggestSkills(data: { title?: string; experience: { role: string; company: string; description: string }[] }) {
     return this.request<{ skills: string[] }>('/cv/suggest-skills', {
       method: 'POST',
@@ -439,15 +498,19 @@ class ApiClient {
     });
   }
 
-  // Wallet endpoints
+  // ── Wallet endpoints ───────────────────────────────────────────
+
+  /** Fetch the current user's wallet details. */
   async getWallet() {
     return this.request<Wallet>('/wallet');
   }
 
+  /** Alias for getWallet(). */
   async getWalletBalance() {
     return this.getWallet();
   }
 
+  /** Fetch paginated wallet transactions with optional filters. */
   async getTransactions(params: TransactionParams = {}) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -463,10 +526,12 @@ class ApiClient {
     };
   }
 
+  /** Alias for getTransactions(). */
   async getTransactionHistory() {
     return this.getTransactions();
   }
 
+  /** Submit a withdrawal request from the wallet. */
   async requestWithdrawal(data: WithdrawalRequest) {
     return this.request<WithdrawalResponse>('/wallet/withdraw', {
       method: 'POST',
@@ -474,17 +539,21 @@ class ApiClient {
     });
   }
 
-  // Payment endpoints
+  // ── Payment endpoints ──────────────────────────────────────────
+
+  /** Start an escrow-based payment for a freelance gig. */
   async initiateEscrow(gigId: string) {
     return this.request<EscrowResponse>(`/escrow/initiate/${gigId}`, {
       method: 'POST',
     });
   }
 
+  /** Get details of an escrow transaction. */
   async getEscrowDetails(escrowId: string) {
     return this.request<EscrowDetails>(`/escrow/${escrowId}`);
   }
 
+  /** Initiate checkout for a paid plan subscription. */
   async initiatePlanCheckout(planId: 'basic' | 'featured' | 'enterprise') {
     return this.request<PlanCheckoutResponse>('/payments/plans/checkout', {
       method: 'POST',
@@ -493,7 +562,9 @@ class ApiClient {
   }
 }
 
-// Types
+// ── Shared Types ──────────────────────────────────────────────────
+
+/** Authenticated user profile returned by the API. */
 export interface User {
   id: string;
   email: string;
@@ -508,6 +579,7 @@ export interface User {
   company?: Company;
 }
 
+/** Payload for user registration (role defaults to JOB_SEEKER). */
 export interface RegisterData {
   email: string;
   password: string;
@@ -516,6 +588,7 @@ export interface RegisterData {
   role?: 'JOB_SEEKER' | 'EMPLOYER' | 'FREELANCER';
 }
 
+/** A job listing with company, category, and status metadata. */
 export interface Job {
   id: string;
   title: string;
@@ -549,24 +622,27 @@ export interface Job {
   isActive?: boolean;
 }
 
-// Helper: whether a job accepts applications
+/** Check whether a job is still accepting applications. */
 export const isJobOpen = (job: Pick<Job, 'status' | 'filled' | 'isActive'>): boolean => {
+  // Uses isActive if present; otherwise falls back to status/filled check
   if (typeof job.isActive === 'boolean') return job.isActive;
   return job.status === 'PUBLISHED' && !job.filled;
 };
 
-// Helper: safely read job type (supports both "type" and legacy "jobType")
+/** Safely read job type — supports both "type" and legacy "jobType" fields. */
 export const jobType = (job: Job): string => (job as any).jobType || job.type;
 
-// Helper: get application count from either field
+/** Get application count from either top-level or _count field. */
 export const getApplicationCount = (job: Job): number => {
   return job.applicationCount ?? job._count?.applications ?? 0;
 };
 
+/** A job detail that optionally includes its related applications. */
 export interface JobDetail extends Job {
   applications?: Application[];
 }
 
+/** Filters and pagination options for job listing queries. */
 export interface JobSearchParams {
   q?: string;
   category?: string;
@@ -577,6 +653,7 @@ export interface JobSearchParams {
   limit?: number;
 }
 
+/** Paginated job listing response. */
 export interface PaginatedJobs {
   data: Job[];
   total: number;
@@ -584,6 +661,7 @@ export interface PaginatedJobs {
   totalPages: number;
 }
 
+/** Payload for creating a new job listing. */
 export interface CreateJobData {
   title: string;
   description: string;
@@ -595,6 +673,7 @@ export interface CreateJobData {
   categoryId: string;
 }
 
+/** A job category with display name and job count. */
 export interface JobCategory {
   id: string;
   slug?: string;
@@ -603,6 +682,7 @@ export interface JobCategory {
   jobCount: number;
 }
 
+/** A job application submitted by a user. */
 export interface Application {
   id: string;
   jobId: string;
@@ -616,12 +696,14 @@ export interface Application {
   job: Job;
 }
 
+/** Payload for submitting a new application. */
 export interface ApplicationData {
   jobId: string;
   coverLetter: string;
   resumeUrl?: string;
 }
 
+/** Fields that can be patched on an existing application. */
 export interface UpdateApplicationData {
   coverLetter?: string;
   resumeUrl?: string;
@@ -629,6 +711,7 @@ export interface UpdateApplicationData {
   expectedSalary?: number;
 }
 
+/** A company/employer profile. */
 export interface Company {
   id: string;
   name: string;
@@ -640,6 +723,7 @@ export interface Company {
   location?: string;
 }
 
+/** Payload for creating or updating a company profile. */
 export interface CompanyData {
   name: string;
   logoUrl?: string;
@@ -650,6 +734,7 @@ export interface CompanyData {
   location?: string;
 }
 
+/** A freelance gig listing with budget, skills, and bids. */
 export interface FreelanceJob {
   id: string;
   title: string;
@@ -665,6 +750,7 @@ export interface FreelanceJob {
   createdAt: string;
 }
 
+/** Paginated freelance job listing response. */
 export interface PaginatedFreelanceJobs {
   data: FreelanceJob[];
   total: number;
@@ -672,6 +758,7 @@ export interface PaginatedFreelanceJobs {
   totalPages: number;
 }
 
+/** Payload for creating a new freelance gig. */
 export interface CreateFreelanceJobData {
   title: string;
   description: string;
@@ -682,6 +769,7 @@ export interface CreateFreelanceJobData {
   skills: string[];
 }
 
+/** A bid placed by a freelancer on a gig. */
 export interface Bid {
   id: string;
   amount: number;
@@ -692,12 +780,14 @@ export interface Bid {
   createdAt: string;
 }
 
+/** Payload for submitting a bid on a freelance gig. */
 export interface BidData {
   amount: number;
   deliveryDays: number;
   proposal: string;
 }
 
+/** A contract between client and freelancer with milestones. */
 export interface Contract {
   id: string;
   freelanceJobId: string;
@@ -708,6 +798,7 @@ export interface Contract {
   milestones: Milestone[];
 }
 
+/** A milestone within a contract with deliverables. */
 export interface Milestone {
   id: string;
   title: string;
@@ -717,6 +808,7 @@ export interface Milestone {
   deliverables: Deliverable[];
 }
 
+/** A completed deliverable attached to a milestone. */
 export interface Deliverable {
   id: string;
   fileUrl: string;
@@ -724,6 +816,7 @@ export interface Deliverable {
   createdAt: string;
 }
 
+/** A user notification with read status. */
 export interface Notification {
   id: string;
   title: string;
@@ -733,6 +826,7 @@ export interface Notification {
   createdAt: string;
 }
 
+/** A saved/bookmarked job with its full job data. */
 export interface SavedJob {
   id: string;
   jobId: string;
@@ -740,7 +834,9 @@ export interface SavedJob {
   savedAt: string;
 }
 
-// Wallet types
+// ── Wallet / Transaction Types ───────────────────────────────────
+
+/** User wallet with available, pending, and total earned balances. */
 export interface Wallet {
   id: string;
   userId: string;
@@ -752,6 +848,7 @@ export interface Wallet {
   updatedAt: string;
 }
 
+/** A single wallet transaction (deposit, withdrawal, escrow, etc.). */
 export interface Transaction {
   id: string;
   walletId: string;
@@ -763,6 +860,7 @@ export interface Transaction {
   createdAt: string;
 }
 
+/** Paginated transaction list response. */
 export interface PaginatedTransactions {
   data: Transaction[];
   total: number;
@@ -770,6 +868,7 @@ export interface PaginatedTransactions {
   totalPages: number;
 }
 
+/** Filters for querying wallet transactions. */
 export interface TransactionParams {
   type?: string;
   status?: string;
@@ -777,11 +876,13 @@ export interface TransactionParams {
   limit?: number;
 }
 
+/** Payload for requesting a wallet withdrawal. */
 export interface WithdrawalRequest {
   amount: number;
   bankAccount: string;
 }
 
+/** Result of a submitted withdrawal request. */
 export interface WithdrawalResponse {
   id: string;
   walletId: string;
@@ -792,6 +893,7 @@ export interface WithdrawalResponse {
   completedAt?: string;
 }
 
+/** Response from initiating an escrow payment. */
 export interface EscrowResponse {
   escrowId: string;
   checkoutUrl: string;
@@ -801,10 +903,12 @@ export interface EscrowResponse {
   netAmount: number;
 }
 
+/** Escrow details including the underlying transaction. */
 export interface EscrowDetails extends EscrowResponse {
   transaction?: Transaction;
 }
 
+/** Response from initiating a paid-plan checkout. */
 export interface PlanCheckoutResponse {
   planId: string;
   amount: number;

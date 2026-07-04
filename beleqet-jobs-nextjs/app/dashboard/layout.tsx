@@ -30,6 +30,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Redirect to login if unauthenticated
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login?redirect=/dashboard');
@@ -48,6 +49,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return null;
   }
 
+  /** Build sidebar nav items based on the authenticated user's role */
   const getNavigationItems = () => {
     const baseItems = [
       { label: 'Overview', href: '/dashboard', icon: BarChart3 },
@@ -104,9 +106,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-pageBg">
       <div className="flex">
-        {/* Sidebar */}
+        {/* Sidebar navigation */}
         <aside className="w-72 bg-white shadow-sm border-r border-border min-h-screen flex flex-col">
-          {/* User Profile */}
+          {/* User profile header */}
           <div className="p-6 border-b border-border">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-brandGreen to-darkGreen text-white rounded-xl flex items-center justify-center text-lg font-bold shadow-md">
@@ -123,7 +125,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Role-based navigation links */}
           <nav className="flex-1 px-4 py-6 space-y-1">
             {navigationItems.map((item) => {
               const isActive = pathname === item.href;
@@ -145,7 +147,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             })}
           </nav>
 
-          {/* Bottom Actions */}
+          {/* Bottom actions: notifications, logout */}
           <div className="p-4 border-t border-border space-y-2">
             <button className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-muted hover:text-ink hover:bg-gray-50 rounded-xl transition-colors">
               <Bell className="w-5 h-5" />
@@ -164,7 +166,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </aside>
 
-        {/* Main Content */}
+        {/* Main page content */}
         <main className="flex-1 p-8 overflow-auto">
           {children}
         </main>

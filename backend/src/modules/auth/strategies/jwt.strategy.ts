@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 
+/** Shape of the decoded JWT token payload. */
 export interface JwtPayload {
   sub: string;
   email: string;
@@ -11,6 +12,7 @@ export interface JwtPayload {
   exp: number;
 }
 
+/** Passport JWT strategy — extracts and validates the Bearer token from requests. */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(config: ConfigService) {

@@ -16,6 +16,7 @@ let listeners: ((toasts: Toast[]) => void)[] = [];
 
 const notify = (listeners: ((toasts: Toast[]) => void)[]) => listeners.forEach(listener => listener(toasts));
 
+/** Global toast notification API — call toast.success/error/info/warning from anywhere. */
 export const toast = {
   success: (title: string, description?: string) => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -43,6 +44,7 @@ export const toast = {
   }
 };
 
+/** Renders active toast notifications in the top-right corner of the viewport. */
 export function Toaster() {
   const [toastList, setToastList] = useState<Toast[]>([]);
 
@@ -71,6 +73,7 @@ export function Toaster() {
   );
 }
 
+/** Single toast notification with auto-dismiss timer and type-based styling. */
 function ToastItem({ toast: item, onRemove }: { toast: Toast; onRemove: () => void }) {
   useEffect(() => {
     if (item.duration) {

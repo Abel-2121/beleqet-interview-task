@@ -7,6 +7,7 @@ import { api, type Job, type JobCategory } from "@/lib/api";
 import JobCard from "@/components/JobCard";
 import JobsFilterSidebar, { type FilterCategory } from "@/components/JobsFilterSidebar";
 
+/** Full jobs listing page with search, location, category/type filters, and pagination. */
 export default function JobsListing() {
   const searchParams = useSearchParams();
 

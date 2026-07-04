@@ -12,6 +12,7 @@ interface PaymentCheckoutProps {
   onError?: (error: string) => void;
 }
 
+/** Escrow payment checkout card with amount display, processing states, and Chapa redirect. */
 export default function PaymentCheckout({
   gigId,
   amount,
@@ -23,6 +24,7 @@ export default function PaymentCheckout({
   const [error, setError] = useState<string>('');
   const [processingMessage, setProcessingMessage] = useState('');
 
+  // Initiate escrow payment via API and redirect to Chapa checkout
   const handlePayment = async () => {
     try {
       setLoading(true);

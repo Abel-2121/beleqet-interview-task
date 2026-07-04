@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { BarChart3, Briefcase, Users, FileText, Loader } from 'lucide-react';
 
+/** Admin reports page showing platform-level stats: jobs, companies, candidates, applications */
 export default function AdminReportsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState({ jobs: 0, companies: 0, candidates: 0, applications: 0 });
   const [loading, setLoading] = useState(true);
 
+  // Redirect non-admin users then fetch platform statistics
   useEffect(() => {
     if (user && user.role !== 'ADMIN') {
       router.push('/dashboard');

@@ -1,3 +1,4 @@
+/** Registration page — multi-role sign-up form with validation and auth context. */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +8,7 @@ import { Eye, EyeOff, Mail, Lock, User, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { toast } from '@/components/Toaster';
 
+/** Renders the registration page with role selection, name/email/password fields, and validation. */
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -30,6 +32,7 @@ export default function RegisterPage() {
     }
   }, [user, authLoading, router]);
 
+  /** Updates form field values on input change. */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
@@ -37,6 +40,7 @@ export default function RegisterPage() {
     });
   };
 
+  /** Validates and submits the registration form — checks password match and length. */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -73,6 +77,7 @@ export default function RegisterPage() {
   };
 
   if (authLoading) {
+    // Loading spinner while auth state is being determined
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brandGreen"></div>
@@ -92,6 +97,7 @@ export default function RegisterPage() {
             <p className="text-xl opacity-90 mb-8">
               Start your career journey with Ethiopia's leading job platform
             </p>
+            {/* Features checklist */}
             <div className="space-y-4 text-left max-w-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -272,6 +278,7 @@ export default function RegisterPage() {
                     className="block w-full pl-10 pr-10 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brandGreen focus:border-transparent"
                     placeholder="Create a strong password"
                   />
+                  {/* Toggle password visibility */}
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
@@ -305,6 +312,7 @@ export default function RegisterPage() {
                     className="block w-full pl-10 pr-10 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brandGreen focus:border-transparent"
                     placeholder="Confirm your password"
                   />
+                  {/* Toggle confirm password visibility */}
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"

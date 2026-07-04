@@ -7,6 +7,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { popularSearches } from "@/lib/mockData";
 import MobilePreview from "./MobilePreview";
 
+/** Hero section with animated search bar, popular searches, trust badges, and mobile preview. */
 export default function Hero() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -16,6 +17,7 @@ export default function Hero() {
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0.3]);
 
+  // Navigate to jobs page with query/location params
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();

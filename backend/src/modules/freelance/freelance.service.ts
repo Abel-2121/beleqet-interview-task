@@ -16,10 +16,12 @@ export class CreateBidDto {
   amount: number; timelineDays: number; coverLetter: string;
 }
 
+/** Service that handles freelance job CRUD, bidding, contract creation, and milestone approval */
 @Injectable()
 export class FreelanceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Create a new freelance job listing for the given client */
   async createJob(clientId: string, dto: CreateFreelanceJobDto) {
     return this.prisma.freelanceJob.create({
       data: { ...dto, clientId, status: 'OPEN' },
@@ -27,10 +29,12 @@ export class FreelanceService {
     });
   }
 
+  /** Fetch all freelance categories ordered by label */
   async getCategories() {
     return this.prisma.freelanceCategory.findMany({ orderBy: { label: 'asc' } });
   }
 
+  /** Search and paginate open/funded jobs with optional keyword and category filters */
   async findJobs(query: { q?: string; category?: string; page?: number; limit?: number }) {
     const pageNum = Number(query.page) || 1;
     const limitNum = Number(query.limit) || 20;
@@ -57,6 +61,7 @@ export class FreelanceService {
     return { data: items, items, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   }
 
+  /** Fetch a single job by ID including category, client, and bids */
   async findJobById(id: string) {
     const job = await this.prisma.freelanceJob.findUnique({
       where: { id },
@@ -73,6 +78,7 @@ export class FreelanceService {
     return job;
   }
 
+  /** Submit a bid on an open/funded job; prevents duplicate bids from the same freelancer */
   async submitBid(freelancerId: string, gigId: string, dto: CreateBidDto) {
     const gig = await this.prisma.freelanceJob.findFirst({
       where: { id: gigId, status: { in: ['OPEN', 'FUNDED'] } },
@@ -87,6 +93,7 @@ export class FreelanceService {
     return this.prisma.bid.create({ data: { ...dto, freelanceJobId: gigId, freelancerId } });
   }
 
+  /** Accept a bid, reject others, create a contract and a chat room (all in a transaction) */
   async acceptBid(bidId: string, clientId: string) {
     const bid = await this.prisma.bid.findFirst({
       where: { id: bidId, freelanceJob: { clientId } },
@@ -126,6 +133,7 @@ export class FreelanceService {
     return contract;
   }
 
+  /** List all bids submitted by a freelancer */
   async getMyBids(freelancerId: string) {
     return this.prisma.bid.findMany({
       where: { freelancerId },
@@ -134,6 +142,7 @@ export class FreelanceService {
     });
   }
 
+  /** List all contracts where the user is either client or freelancer */
   async getMyContracts(userId: string) {
     return this.prisma.contract.findMany({
       where: { OR: [{ clientId: userId }, { freelancerId: userId }] },
@@ -147,6 +156,7 @@ export class FreelanceService {
     });
   }
 
+  /** Fetch a single contract by ID with milestones, deliverables, and user profiles */
   async getContract(id: string) {
     const c = await this.prisma.contract.findUnique({
       where: { id },
@@ -161,6 +171,7 @@ export class FreelanceService {
     return c;
   }
 
+  /** Approve a milestone (client-only); marks it as APPROVED with a timestamp */
   async approveMilestone(milestoneId: string, clientId: string) {
     const m = await this.prisma.milestone.findFirst({
       where: { id: milestoneId, contract: { clientId } },

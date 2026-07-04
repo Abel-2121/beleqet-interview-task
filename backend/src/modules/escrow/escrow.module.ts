@@ -5,6 +5,7 @@ import { EscrowService } from './escrow.service';
 import { EscrowController } from './escrow.controller';
 import { EscrowProcessor } from './escrow.processor';
 
+/** Module that orchestrates escrow payments via Chapa, including queue processing and webhook handling */
 @Module({
   imports: [
     BullModule.registerQueue(

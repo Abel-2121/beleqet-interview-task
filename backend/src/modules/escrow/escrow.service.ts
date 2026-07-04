@@ -16,6 +16,7 @@ import {
 
 const PLATFORM_FEE_PCT = 0.10;
 
+/** Service that handles escrow lifecycle: initiation, Chapa verification, funding, and milestone release */
 @Injectable()
 export class EscrowService {
   private readonly logger = new Logger(EscrowService.name);
@@ -100,6 +101,7 @@ export class EscrowService {
     return { escrowId: escrow.id, checkoutUrl, txRef: finalTxRef, grossAmount, platformFee, netAmount };
   }
 
+  /** Build and call the Chapa checkout initialization with escrow details */
   private async createChapaCheckout(
     job: { title: string; client: { email: string; firstName: string; lastName: string; phone?: string | null } },
     grossAmount: number,
@@ -132,7 +134,7 @@ export class EscrowService {
     return `${frontendUrl}/freelance/payment-success?escrowId=${escrowId}`;
   }
 
-  /** Verify with Chapa API then mark escrow funded (idempotent) */
+  /** Verify a Chapa transaction via API and mark the corresponding escrow as funded (idempotent) */
   async verifyAndProcessPayment(txRef: string) {
     const chapaSecret = getChapaSecret(this.config);
     if (!chapaSecret) {
@@ -153,6 +155,7 @@ export class EscrowService {
     };
   }
 
+  /** Mark an escrow transaction as funded in a DB transaction, log the event, and send a notification */
   async markEscrowFunded(txRef: string, gatewayResponse: Record<string, unknown>) {
     const escrow = await this.findEscrowByTxRef(txRef);
     if (!escrow) {
@@ -207,6 +210,7 @@ export class EscrowService {
     return { processed: true, alreadyProcessed: false, escrowId: escrow.id };
   }
 
+  /** Look up an escrow transaction by its Chapa tx_ref or embedded escrow ID */
   private async findEscrowByTxRef(txRef: string) {
     const escrowId = parseEscrowIdFromTxRef(txRef);
     return this.prisma.escrowTransaction.findFirst({
@@ -219,7 +223,7 @@ export class EscrowService {
     });
   }
 
-  /** Queue webhook payload (POST from Chapa) */
+  /** Queue an incoming webhook payload from Chapa for async processing */
   async handleWebhook(payload: Record<string, unknown>) {
     const txRef =
       (payload.tx_ref as string) ||
@@ -235,6 +239,7 @@ export class EscrowService {
     await this.escrowQueue.add(ESCROW_JOBS.PROCESS_WEBHOOK, { tx_ref: txRef, ...payload });
   }
 
+  /** Return the current status and amount details for a given escrow transaction */
   async getEscrowStatus(txRef: string) {
     const escrow = await this.findEscrowByTxRef(txRef);
     if (!escrow) throw new NotFoundException('Escrow not found');
@@ -246,7 +251,7 @@ export class EscrowService {
     };
   }
 
-  /** Called when employer approves milestone */
+  /** Approve a milestone and enqueue an auto-release job after a 3-day hold period */
   async releaseMilestone(milestoneId: string, clientId: string) {
     const milestone = await this.prisma.milestone.findFirst({
       where: { id: milestoneId, contract: { clientId } },

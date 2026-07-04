@@ -5,10 +5,12 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+/** Global exception filter — catches all exceptions and returns a consistent JSON error response. */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
+  /** Formats the exception into a standard `{ statusCode, timestamp, path, message }` response. */
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx    = host.switchToHttp();
     const res    = ctx.getResponse<Response>();

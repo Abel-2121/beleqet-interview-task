@@ -1,7 +1,7 @@
 import { IsString, IsEnum, IsOptional, IsInt, IsBoolean, IsDateString, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-// Local enum — mirrors Prisma JobType without requiring generated client
+/** Enum of available job types (FULL_TIME, PART_TIME, REMOTE, etc.). */
 export enum JobType {
   FULL_TIME = 'FULL_TIME',
   PART_TIME = 'PART_TIME',
@@ -10,12 +10,14 @@ export enum JobType {
   CONTRACT = 'CONTRACT',
 }
 
+/** Publication status for a job listing: DRAFT, PUBLISHED, or CLOSED. */
 export enum JobStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
   CLOSED = 'CLOSED',
 }
 
+/** DTO for creating a new job listing — includes all editable fields. */
 export class CreateJobDto {
   @ApiProperty() @IsString() title: string;
   @ApiProperty() @IsString() description: string;
@@ -50,6 +52,7 @@ export class CreateJobDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() currency?: string;
 }
 
+/** DTO for querying/paginating published job listings. */
 export class QueryJobsDto {
   @IsOptional() @IsString() q?: string;
   @IsOptional() @IsString() category?: string;

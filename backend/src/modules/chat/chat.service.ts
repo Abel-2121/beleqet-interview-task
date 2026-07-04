@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Service managing chat rooms, messages, and participant verification via Prisma */
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);

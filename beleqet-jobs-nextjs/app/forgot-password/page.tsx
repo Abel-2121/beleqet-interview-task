@@ -1,3 +1,4 @@
+/** Forgot password page — email input that sends a password reset link. */
 'use client';
 
 import { useState } from 'react';
@@ -5,12 +6,14 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Mail, ArrowLeft } from 'lucide-react';
 
+/** Renders the forgot-password form: enter email to receive a reset link. */
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
+  /** Sends a forgot-password request to the API, then shows confirmation. */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -28,21 +31,25 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {/* Back navigation */}
         <Link href="/login" className="inline-flex items-center gap-2 text-sm text-muted hover:text-brandGreen mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to login
         </Link>
 
         <div className="bg-white rounded-2xl border border-border p-8">
+          {/* Header with icon */}
           <div className="flex items-center gap-3 mb-6">
             <Mail className="w-6 h-6 text-brandGreen" />
             <h1 className="text-2xl font-bold text-ink">Reset Password</h1>
           </div>
 
           {sent ? (
+            // Confirmation message after email is sent
             <p className="text-sm text-brandGreen font-medium">
               If an account exists for {email}, a reset link has been sent.
             </p>
           ) : (
+            // Email input form
             <form onSubmit={handleSubmit} className="space-y-4">
               <p className="text-sm text-muted">Enter your email and we&apos;ll send you a reset link.</p>
               <input

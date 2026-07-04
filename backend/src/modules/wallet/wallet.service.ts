@@ -3,6 +3,7 @@ import { IsEnum, IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 
+/** DTO for validating withdrawal requests (amount, payment method, and account reference) */
 export class WithdrawDto {
   @IsInt()
   @Min(1, { message: 'Minimum withdrawal is ETB 1' })
@@ -17,6 +18,7 @@ export class WithdrawDto {
   accountRef: string;
 }
 
+/** Manages freelancer wallet creation, balance queries, and payout processing via Chapa */
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
@@ -26,6 +28,7 @@ export class WalletService {
     private readonly config: ConfigService,
   ) {}
 
+  /** Retrieves the user's wallet or creates one if it doesn't exist, including recent transactions */
   async getOrCreate(userId: string) {
     return this.prisma.freelancerWallet.upsert({
       where: { userId },
@@ -35,6 +38,7 @@ export class WalletService {
     });
   }
 
+  /** Processes a withdrawal: deducts balance, attempts Chapa payout, and rolls back on failure */
   async withdraw(userId: string, dto: WithdrawDto) {
     const wallet = await this.prisma.freelancerWallet.findUnique({ where: { userId } });
     if (!wallet) throw new NotFoundException('Wallet not found');

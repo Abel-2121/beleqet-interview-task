@@ -1,7 +1,7 @@
 import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-// Local enum — avoids dependency on generated Prisma client at compile time.
+/** User roles available in the system. Defined locally to avoid Prisma client dependency at compile time. */
 export enum UserRole {
   ADMIN      = 'ADMIN',
   EMPLOYER   = 'EMPLOYER',
@@ -9,6 +9,7 @@ export enum UserRole {
   FREELANCER = 'FREELANCER',
 }
 
+/** DTO for user registration — email, name, password, and optional role. */
 export class RegisterDto {
   @ApiProperty({ example: 'henok@beleqet.com' })
   @IsEmail()
@@ -33,6 +34,7 @@ export class RegisterDto {
   role?: UserRole;
 }
 
+/** DTO for user login — email and password. */
 export class LoginDto {
   @ApiProperty({ example: 'henok@beleqet.com' })
   @IsEmail()
@@ -43,24 +45,28 @@ export class LoginDto {
   password: string;
 }
 
+/** DTO for refreshing an access token — requires the refresh token string. */
 export class RefreshDto {
   @ApiProperty()
   @IsString()
   refreshToken: string;
 }
 
+/** DTO for email verification — contains the verification token. */
 export class VerifyEmailDto {
   @ApiProperty()
   @IsString()
   token: string;
 }
 
+/** DTO for requesting a password reset — takes the user's email. */
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'henok@beleqet.com' })
   @IsEmail()
   email: string;
 }
 
+/** DTO for resetting a password — requires the reset token and new password. */
 export class ResetPasswordDto {
   @ApiProperty()
   @IsString()

@@ -18,6 +18,7 @@ interface TelegramPayload {
   message: string;
 }
 
+/** DTO for email notification jobs sent via EmailJS */
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -25,6 +26,7 @@ export interface EmailPayload {
   templateParams?: Record<string, string>;
 }
 
+/** Consumes the notifications queue and dispatches in-app, Telegram, and email messages */
 @Injectable()
 @Processor(QUEUE_NAMES.NOTIFICATIONS)
 export class NotificationsProcessor {
@@ -35,6 +37,7 @@ export class NotificationsProcessor {
     private readonly config: ConfigService,
   ) {}
 
+  /** Persists an in-app notification to the database */
   @Process(NOTIFICATION_JOBS.SEND_IN_APP)
   async sendInApp(job: Job<InAppPayload>) {
     const { userId, type, title, body, metadata } = job.data;
@@ -52,6 +55,7 @@ export class NotificationsProcessor {
     this.logger.debug(`In-app → ${userId}: ${title}`);
   }
 
+  /** Sends a Telegram message via the Bot API */
   @Process(NOTIFICATION_JOBS.SEND_TELEGRAM)
   async sendTelegram(job: Job<TelegramPayload>) {
     const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
@@ -72,6 +76,7 @@ export class NotificationsProcessor {
     }
   }
 
+  /** Sends an email via the EmailJS service */
   @Process(NOTIFICATION_JOBS.SEND_EMAIL)
   async sendEmail(job: Job<EmailPayload>) {
     const { to, subject, html, templateParams } = job.data;

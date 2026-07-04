@@ -31,14 +31,17 @@ interface JobPosting {
   salaryMax?: number;
 }
 
+/** Employer dashboard page listing their job postings with status, applications count, and actions */
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch employer's job postings on mount
   useEffect(() => {
     fetchJobs();
   }, []);
 
+  /** Load the current employer's job listings */
   const fetchJobs = async () => {
     try {
       setLoading(true);

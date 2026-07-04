@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Send } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 
+/** Call-to-action banner promoting the Telegram job alert channel with scroll animation. */
 export default function CTABanner() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });

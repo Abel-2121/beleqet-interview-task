@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { api, User } from './api';
 
+/** Shape of the auth context exposed to consumers. */
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -13,6 +14,7 @@ interface AuthContextType {
   updateUser: (userData: User) => void;
 }
 
+/** Registration form data (role defaults to JOB_SEEKER). */
 interface RegisterData {
   email: string;
   password: string;
@@ -21,8 +23,10 @@ interface RegisterData {
   role?: 'JOB_SEEKER' | 'EMPLOYER' | 'FREELANCER';
 }
 
+// React context — undefined default forces useAuth to guard access
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Provides auth state (user, loading) and actions (login, register, logout) to the tree. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /** Fetch profile from API to validate token and sync user state. */
   const refreshUser = async () => {
     try {
       const userData = await api.getProfile();
@@ -51,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /** Authenticate with email/password and set the user state. */
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -64,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
+  /** Create a new account and automatically log in. */
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
@@ -77,11 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
+  /** Clear stored tokens and reset user to null. */
   const logout = () => {
     api.logout();
     setUser(null);
   };
 
+  /** Imperatively update the user state (e.g. after profile edit). */
   const updateUser = (userData: User) => {
     setUser(userData);
   };
@@ -99,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** Hook to access auth context; throws if used outside AuthProvider. */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

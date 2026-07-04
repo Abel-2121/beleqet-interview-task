@@ -7,6 +7,10 @@ import { api } from '@/lib/api';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
+/**
+ * Gig creation page for employers.
+ * Renders a form to post a new freelance project listing.
+ */
 export default function PostGigPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -39,10 +43,12 @@ export default function PostGigPage() {
     });
   }, []);
 
+  /** Updates the corresponding form field on user input. */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  /** Submits the gig form to the API and redirects to the gig listing. */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -67,12 +73,14 @@ export default function PostGigPage() {
   return (
     <div className="min-h-screen bg-pageBg py-8">
       <div className="max-w-2xl mx-auto px-4">
+        {/* Back navigation */}
         <Link href="/freelance" className="inline-flex items-center gap-2 text-sm text-muted hover:text-brandGreen mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to gigs
         </Link>
 
         <h1 className="text-3xl font-bold text-ink mb-8">Post a Freelance Gig</h1>
 
+        {/* Gig creation form with title, description, budget, deadline, and skills */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-border p-8 space-y-5">
           <div>
             <label className="block text-sm font-medium text-ink mb-1.5">Project Title</label>

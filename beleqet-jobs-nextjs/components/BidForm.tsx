@@ -9,6 +9,7 @@ interface BidFormProps {
   onBidSubmitted?: () => void;
 }
 
+/** Form for freelancers to submit a bid with amount, delivery days, and proposal. */
 export default function BidForm({ gigId, onBidSubmitted }: BidFormProps) {
   const [bidAmount, setBidAmount] = useState("");
   const [deliveryDays, setDeliveryDays] = useState("");
@@ -72,6 +73,7 @@ export default function BidForm({ gigId, onBidSubmitted }: BidFormProps) {
     }
   };
 
+  // Show success message after bid submission
   if (success) {
     return (
       <div className="rounded-xl border border-brandGreen/30 bg-brandGreen/5 p-6">

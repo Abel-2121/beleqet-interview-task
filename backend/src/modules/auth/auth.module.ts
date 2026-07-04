@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { BullModule } from '@nestjs/bull';
 import { QUEUE_NAMES } from '../queues/queues.constants';
 
+/** Configures authentication with JWT, Passport, and notification queue support. */
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),

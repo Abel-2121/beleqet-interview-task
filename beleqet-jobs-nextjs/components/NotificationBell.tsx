@@ -14,6 +14,7 @@ interface Notification {
   createdAt: string;
 }
 
+/** Bell icon with unread badge and dropdown notification list. */
 export default function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -39,6 +40,7 @@ export default function NotificationBell() {
 
   const unread = notifications.filter((n) => !n.read).length;
 
+  // Mark a single notification as read optimistically
   const markRead = async (id: string) => {
     await api.markNotificationRead(id).catch(() => {});
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));

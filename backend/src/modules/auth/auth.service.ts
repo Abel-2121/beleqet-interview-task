@@ -11,6 +11,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { QUEUE_NAMES, NOTIFICATION_JOBS } from '../queues/queues.constants';
 
+/** Handles user registration, authentication, token management, and password flows. */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -22,6 +23,7 @@ export class AuthService {
     @InjectQueue(QUEUE_NAMES.NOTIFICATIONS) private readonly notificationsQueue: Queue,
   ) { }
 
+  /** Create a new user account, hash the password, and issue JWT tokens. */
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email already registered');
@@ -49,6 +51,7 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
+  /** Verify email/password credentials and return the user if valid. */
   async validateUser(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
@@ -59,10 +62,12 @@ export class AuthService {
     return user;
   }
 
+  /** Issue JWT access and refresh tokens for the authenticated user. */
   async login(user: { id: string; email: string; firstName: string; lastName: string; role: string }) {
     return this.issueTokens(user);
   }
 
+  /** Validate and rotate a refresh token, then issue new JWT tokens. */
   async refresh(token: string) {
     const storedToken = await this.prisma.refreshToken.findUnique({
       where: { token },
@@ -78,10 +83,12 @@ export class AuthService {
     return this.issueTokens(storedToken.user);
   }
 
+  /** Delete all refresh tokens for the user, effectively logging them out. */
   async logout(userId: string) {
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
   }
 
+  /** Create a verification token and push an email notification to the queue. */
   async sendVerificationEmail(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
@@ -105,6 +112,7 @@ export class AuthService {
     });
   }
 
+  /** Validate a verification token and mark the user's email as verified. */
   async verifyEmail(token: string) {
     const verificationToken = await this.prisma.verificationToken.findUnique({ where: { token } });
     if (!verificationToken || verificationToken.type !== 'EMAIL_VERIFICATION' || verificationToken.expiresAt < new Date()) {
@@ -120,6 +128,7 @@ export class AuthService {
     return { success: true, message: 'Email verified successfully' };
   }
 
+  /** Generate a password reset token and send the reset link via email. */
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) return { success: true, message: 'If an account exists, a reset link was sent.' };
@@ -153,6 +162,7 @@ export class AuthService {
     return { success: true, message: 'If an account exists, a reset link was sent.' };
   }
 
+  /** Validate a reset token and update the user's password hash. */
   async resetPassword(token: string, newPassword: string) {
     const verificationToken = await this.prisma.verificationToken.findUnique({ where: { token } });
     if (!verificationToken || verificationToken.type !== 'PASSWORD_RESET' || verificationToken.expiresAt < new Date()) {
@@ -210,6 +220,7 @@ export class AuthService {
     };
   }
 
+  /** Fetch the authenticated user's full profile with all optional fields. */
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 
+/** Beleqet design tokens — brand colors, fonts, shadows, and border radii. */
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",

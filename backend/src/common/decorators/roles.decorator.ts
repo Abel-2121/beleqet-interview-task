@@ -5,4 +5,5 @@ import { SetMetadata } from '@nestjs/common';
 export type UserRoleType = 'ADMIN' | 'EMPLOYER' | 'JOB_SEEKER' | 'FREELANCER';
 
 export const ROLES_KEY = 'roles';
+/** Decorator that marks a route handler with the roles permitted to access it. */
 export const Roles = (...roles: UserRoleType[]) => SetMetadata(ROLES_KEY, roles);

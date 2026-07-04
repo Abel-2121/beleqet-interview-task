@@ -33,11 +33,13 @@ export const EMPLOYER_PLANS = {
 
 export type EmployerPlanId = keyof typeof EMPLOYER_PLANS;
 
+/** Builds a unique transaction reference string from userId and planId */
 function buildPlanTxRef(userId: string, planId: string): string {
   const shortId = userId.replace(/-/g, '').slice(0, 8);
   return `BLQ-PLAN-${shortId}-${planId}-${Date.now()}`;
 }
 
+/** Manages employer plan definitions, Chapa checkout initiation, and payment verification */
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -47,10 +49,12 @@ export class PaymentsService {
     private readonly config: ConfigService,
   ) {}
 
+  /** Returns the static list of employer pricing plans */
   getPlans() {
     return Object.values(EMPLOYER_PLANS);
   }
 
+  /** Initiates a Chapa checkout for the given plan; returns a checkout URL or free-plan message */
   async initiatePlanCheckout(userId: string, planId: EmployerPlanId) {
     const plan = EMPLOYER_PLANS[planId];
     if (!plan) throw new BadRequestException('Invalid plan');
@@ -127,6 +131,7 @@ export class PaymentsService {
     };
   }
 
+  /** Verifies a completed Chapa transaction using the transaction reference */
   async verifyPlanPayment(txRef: string, planId?: string) {
     const chapaSecret = getChapaSecret(this.config);
     if (!chapaSecret) {

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { FreelanceJob } from "@/lib/api";
 
+// Cycling colour themes for gig cards
 const CARD_THEMES = [
   {
     gradient: "from-brandGreen/25 via-success/10 to-cyanAccent/20",
@@ -48,6 +49,7 @@ type GigCardData = FreelanceJob & {
   client?: { firstName?: string; lastName?: string };
 };
 
+// Format posted date to relative time string
 const formatDate = (dateString?: string) => {
   if (!dateString) return "Recently posted";
   const date = new Date(dateString);
@@ -61,6 +63,7 @@ const formatDate = (dateString?: string) => {
   return `${diffInDays}d ago`;
 };
 
+// Calculate remaining days or return deadline status
 const formatDeadline = (gig: GigCardData) => {
   if (gig.deadlineDays != null) {
     if (gig.deadlineDays === 0) return "Due today";
@@ -76,6 +79,7 @@ const formatDeadline = (gig: GigCardData) => {
   return `${diffInDays} days left`;
 };
 
+// Format budget range, fixed amount, or fallback message
 const formatBudget = (gig: GigCardData) => {
   if (gig.budgetMin != null && gig.budgetMax != null) {
     return `${gig.budgetMin.toLocaleString()} – ${gig.budgetMax.toLocaleString()} ETB`;
@@ -96,6 +100,7 @@ const getClientName = (gig: GigCardData) => {
   return "Verified client";
 };
 
+/** Freelance gig card with gradient header, budget, deadline, skills, and bid count. */
 export default function GigCard({
   gig,
   index = 0,

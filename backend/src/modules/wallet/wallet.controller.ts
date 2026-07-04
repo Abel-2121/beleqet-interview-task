@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { WalletService, WithdrawDto } from './wallet.service';
 
+/** Handles HTTP routes for freelancer wallet operations */
 @ApiTags('wallet')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -12,9 +13,11 @@ import { WalletService, WithdrawDto } from './wallet.service';
 export class WalletController {
   constructor(private readonly svc: WalletService) {}
 
+  /** Returns the authenticated user's wallet with recent transactions */
   @Get()
   getWallet(@CurrentUser() u: CurrentUserPayload) { return this.svc.getOrCreate(u.userId); }
 
+  /** Submits a withdrawal request from the user's available balance */
   @Post('withdraw')
   withdraw(@CurrentUser() u: CurrentUserPayload, @Body() dto: WithdrawDto) { return this.svc.withdraw(u.userId, dto); }
 }

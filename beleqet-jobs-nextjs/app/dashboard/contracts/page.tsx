@@ -17,16 +17,19 @@ interface Contract {
   freelancer: { firstName: string; lastName: string };
 }
 
+/** Contracts page listing freelance contracts with status, amount, and escrow funding option */
 export default function ContractsPage() {
   const { user } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedForPayment, setSelectedForPayment] = useState<Contract | null>(null);
 
+  // Load contracts on mount or user change
   useEffect(() => {
     loadContracts();
   }, [user]);
 
+  /** Fetch all contracts for the current user */
   const loadContracts = async () => {
     try {
       setLoading(true);
@@ -40,6 +43,7 @@ export default function ContractsPage() {
     }
   };
 
+  /** Map contract status to Tailwind badge color classes */
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE': return 'bg-green-50 text-green-700 border-green-200';
@@ -49,6 +53,7 @@ export default function ContractsPage() {
     }
   };
 
+  /** Determine the counterparty (client or freelancer) for display */
   const getOtherParty = (contract: Contract) => {
     if (user?.id === contract.client?.firstName) return contract.freelancer;
     return user?.role === 'FREELANCER' ? contract.client : contract.freelancer;

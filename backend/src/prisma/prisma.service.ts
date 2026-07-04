@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
+/** Wraps PrismaClient with lifecycle hooks (connect on init, disconnect on destroy) and a soft-delete helper. */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
@@ -15,6 +16,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     });
   }
 
+  /** Connects to PostgreSQL on module init and logs slow queries in development. */
   async onModuleInit() {
     await this.$connect();
     this.logger.log('Prisma connected to PostgreSQL');
@@ -30,6 +32,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
   }
 
+  /** Disconnects Prisma from PostgreSQL on module shutdown. */
   async onModuleDestroy() {
     await this.$disconnect();
     this.logger.log('Prisma disconnected');

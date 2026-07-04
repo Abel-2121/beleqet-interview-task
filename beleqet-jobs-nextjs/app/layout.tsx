@@ -1,3 +1,4 @@
+/** Root layout — wraps every page with global styles, header, footer, auth context, and toaster. */
 import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
     "Search verified jobs from trusted employers across Ethiopia. Discover thousands of job opportunities, get instant alerts on Telegram, and apply faster with Beleqet Vacancy Platform.",
 };
 
+/** Provides the global HTML shell, auth context, header/footer, and toast notifications. */
 export default function RootLayout({
   children,
 }: {
@@ -27,9 +29,13 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased">
         <AuthProvider>
+          {/* Site header with navigation */}
           <Header />
+          {/* Page-specific content */}
           <main>{children}</main>
+          {/* Site footer */}
           <Footer />
+          {/* Global toast notifications */}
           <Toaster />
         </AuthProvider>
       </body>

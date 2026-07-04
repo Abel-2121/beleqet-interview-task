@@ -1,3 +1,4 @@
+/** A simplified job object used in static/mock UI demos. */
 export type Job = {
   id: string;
   title: string;
@@ -11,6 +12,7 @@ export type Job = {
   tags?: string[];
 };
 
+/** Job categories with display labels, counts, and icons for the browse UI. */
 export const categories = [
   { id: "it-software", label: "IT & Software", count: "1,290", icon: "laptop" },
   { id: "marketing", label: "Marketing", count: "642", icon: "megaphone" },
@@ -21,6 +23,7 @@ export const categories = [
   { id: "other", label: "Other", count: "1,135", icon: "more-horizontal" },
 ];
 
+/** Static list of mock job listings for demo/preview purposes. */
 export const jobs: Job[] = [
   {
     id: "full-stack-developer-takacash",
@@ -174,6 +177,7 @@ export const jobs: Job[] = [
   },
 ];
 
+/** Hero / stats-bar data showing platform scale metrics. */
 export const stats = [
   { label: "Active Jobs", value: "10,000+", icon: "briefcase" },
   { label: "Hiring Companies", value: "5,000+", icon: "building-2" },
@@ -181,4 +185,5 @@ export const stats = [
   { label: "Satisfaction Rate", value: "98%", icon: "smile" },
 ];
 
+/** Popular search terms shown as quick-filter chips. */
 export const popularSearches = ["Developer", "Marketing", "Designer", "Accounting", "Sales", "Remote"];

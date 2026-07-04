@@ -6,6 +6,7 @@ import { ChevronDown, User, Briefcase, Heart, Settings, LogOut, Menu, X } from "
 import { useAuth } from "@/lib/auth-context";
 import NotificationBell from "@/components/NotificationBell";
 
+// Main navigation links displayed in the header
 const navItems = [
   { label: "Find Jobs", href: "/jobs" },
   { label: "Freelance", href: "/freelance" },
@@ -15,6 +16,7 @@ const navItems = [
   { label: "Contact", href: "/contact" },
 ];
 
+/** Sticky site header with logo, desktop nav, user menu dropdown, and mobile hamburger menu. */
 export default function Header() {
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);

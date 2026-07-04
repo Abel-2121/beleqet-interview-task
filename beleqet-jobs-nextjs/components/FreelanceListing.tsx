@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, Calendar, DollarSign } from "lucide-react";
 import { api, type FreelanceJob, type JobCategory } from "@/lib/api";
 import GigCard from "@/components/GigCard";
 
+/** Full freelance gig listing page with search, category/budget/deadline filters, and pagination. */
 export default function FreelanceListing() {
   const searchParams = useSearchParams();
 
@@ -15,7 +16,7 @@ export default function FreelanceListing() {
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [daysLeft, setDaysLeft] = useState<string>("");
 
-  // State for API data
+  // API data state
   const [gigs, setGigs] = useState<FreelanceJob[]>([]);
   const [categories, setCategories] = useState<JobCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ export default function FreelanceListing() {
     }
   };
 
-  // Handle search input changes
+  // Reset to page 1 on filter change
   const handleQueryChange = (value: string) => {
     setQuery(value);
     setCurrentPage(1);
@@ -268,6 +269,7 @@ export default function FreelanceListing() {
                 ))}
               </div>
               
+              // Page navigation controls
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-8">

@@ -20,16 +20,19 @@ interface Contract {
   milestones?: Array<{ id: string; title: string; status: string }>;
 }
 
+/** Freelance dashboard with tabbed view of bids and contracts for freelancers */
 export default function FreelanceDashboard() {
   const [bids, setBids] = useState<Bid[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [tab, setTab] = useState<'bids' | 'contracts'>('bids');
   const [loading, setLoading] = useState(true);
 
+  // Fetch bids or contracts depending on the active tab
   useEffect(() => {
     fetchData();
   }, [tab]);
 
+  /** Load bids or contracts based on the selected tab */
   const fetchData = async () => {
     try {
       setLoading(true);

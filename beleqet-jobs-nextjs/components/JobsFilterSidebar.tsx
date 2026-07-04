@@ -33,6 +33,7 @@ interface JobsFilterSidebarProps {
   activeFilterCount: number;
 }
 
+// Available job type filters with icons
 const jobTypes = [
   { value: "FULL_TIME", label: "Full Time", icon: Briefcase },
   { value: "PART_TIME", label: "Part Time", icon: Timer },
@@ -41,6 +42,7 @@ const jobTypes = [
   { value: "CONTRACT", label: "Contract", icon: Users },
 ];
 
+/** Sidebar with category search/filter and job type pill selectors. */
 export default function JobsFilterSidebar({
   categories,
   category,
@@ -208,6 +210,7 @@ export default function JobsFilterSidebar({
   );
 }
 
+/** Single category filter row with active state and job count badge. */
 function FilterOption({
   active,
   disabled,
@@ -244,6 +247,7 @@ function FilterOption({
   );
 }
 
+/** Pill-style toggle button for job type filters. */
 function TypePill({
   active,
   disabled,

@@ -1,5 +1,7 @@
+/** Pricing page — displays employer subscription plans (Basic, Featured, Enterprise). */
 import PricingPlans, { type PricingPlan } from '@/components/PricingPlans';
 
+/** Static pricing plan data used to populate the PricingPlans component. */
 const plans: PricingPlan[] = [
   {
     id: 'basic',
@@ -31,9 +33,11 @@ const plans: PricingPlan[] = [
 
 export const metadata = { title: 'Pricing | Beleqet Jobs' };
 
+/** Renders the pricing page header and passes plan data to the PricingPlans component. */
 export default function PricingPage() {
   return (
     <div className="container-page py-16">
+      {/* Page heading and description */}
       <div className="text-center max-w-xl mx-auto">
         <h1 className="text-pageH1">Simple pricing for employers</h1>
         <p className="text-muted mt-3">
@@ -41,6 +45,7 @@ export default function PricingPage() {
         </p>
       </div>
 
+      {/* Plan cards */}
       <PricingPlans plans={plans} />
     </div>
   );

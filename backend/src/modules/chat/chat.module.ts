@@ -6,6 +6,7 @@ import { ChatGateway } from './chat.gateway';
 import { ChatController } from './chat.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 
+/** Module that wires up real-time chat via WebSocket gateway, JWT-guarded REST controller, and persistence */
 @Module({
   imports: [
     PrismaModule,

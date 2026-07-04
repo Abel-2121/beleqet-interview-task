@@ -3,6 +3,9 @@ import { BullModule } from '@nestjs/bull';
 import { QUEUE_NAMES } from '../queues/queues.constants';
 import { ScreeningProcessor } from './screening.processor';
 
+/**
+ * Registers the Screening module — processes BullMQ jobs for AI screening and notifications.
+ */
 @Module({
   imports: [
     BullModule.registerQueue(

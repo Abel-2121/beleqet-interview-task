@@ -2,6 +2,9 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateJobDto, QueryJobsDto } from './dto/create-job.dto';
 
+/**
+ * Business logic for job listings — CRUD, search, categories, and stats.
+ */
 @Injectable()
 export class JobsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -19,6 +22,7 @@ export class JobsService {
     };
   }
 
+  /** Create a new job listing, linked to the employer's company. */
   async create(employerId: string, dto: CreateJobDto) {
     const company = await this.prisma.company.findUnique({ where: { userId: employerId } });
     if (!company) throw new ForbiddenException('Create a company profile before posting jobs');
@@ -40,6 +44,7 @@ export class JobsService {
     return cat?.id ?? null;
   }
 
+  /** Fetch all job categories, each annotated with the count of published jobs. */
   async getCategories() {
     const categories = await this.prisma.jobCategory.findMany({
       orderBy: { label: 'asc' },
@@ -62,6 +67,7 @@ export class JobsService {
     }));
   }
 
+  /** Return aggregate platform statistics for the homepage. */
   async getStats() {
     const [jobs, companies, candidates, applications] = await Promise.all([
       this.prisma.job.count({ where: { status: 'PUBLISHED' } }),
@@ -73,6 +79,7 @@ export class JobsService {
     return { jobs, companies, candidates, applications };
   }
 
+  /** Search published jobs with paginated, filtered results (text, category, location, type). */
   async findAll(query: QueryJobsDto) {
     const pageNum = Number(query.page) || 1;
     const limitNum = Number(query.limit) || 20;
@@ -111,6 +118,7 @@ export class JobsService {
     return { data: items.map((job) => this.mapJob(job)), total, page: pageNum, totalPages: Math.ceil(total / limitNum) };
   }
 
+  /** Find a single job by ID, with company and category included. */
   async findOne(id: string) {
     const job = await this.prisma.job.findUnique({
       where: { id },
@@ -120,18 +128,21 @@ export class JobsService {
     return this.mapJob(job);
   }
 
+  /** Update a job listing — only the owning employer can modify it. */
   async update(id: string, employerId: string, dto: Partial<CreateJobDto>) {
     const job = await this.prisma.job.findFirst({ where: { id, company: { userId: employerId } } });
     if (!job) throw new NotFoundException('Job not found or access denied');
     return this.prisma.job.update({ where: { id }, data: dto as never });
   }
 
+  /** Soft-delete a job by setting its status to ARCHIVED. */
   async remove(id: string, employerId: string) {
     const job = await this.prisma.job.findFirst({ where: { id, company: { userId: employerId } } });
     if (!job) throw new NotFoundException('Job not found or access denied');
     return this.prisma.job.update({ where: { id }, data: { status: 'ARCHIVED' } });
   }
 
+  /** Fetch all jobs belonging to the employer's company, with application counts. */
   async findByCompany(employerId: string) {
     return this.prisma.job.findMany({
       where: { company: { userId: employerId } },

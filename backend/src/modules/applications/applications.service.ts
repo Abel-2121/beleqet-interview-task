@@ -14,6 +14,9 @@ const applicationInclude = {
   score: true,
 };
 
+/**
+ * Business logic for job applications — submission, screening orchestration, and lifecycle.
+ */
 @Injectable()
 export class ApplicationsService {
   private readonly logger = new Logger(ApplicationsService.name);
@@ -42,6 +45,7 @@ export class ApplicationsService {
     };
   }
 
+  /** Submit a new application — validates job, enqueues AI screening and notifications. */
   async submit(userId: string, dto: CreateApplicationDto) {
     const job = await this.prisma.job.findFirst({
       where: { id: dto.jobId, status: 'PUBLISHED', filled: false },
@@ -138,6 +142,7 @@ export class ApplicationsService {
     return this.mapApplication(application);
   }
 
+  /** Return all applications submitted by the given user. */
   async findByUser(userId: string) {
     const items = await this.prisma.application.findMany({
       where: { userId },
@@ -147,6 +152,7 @@ export class ApplicationsService {
     return items.map((app) => this.mapApplication(app));
   }
 
+  /** Return all applications for a given job (employer/admin only). */
   async findByJob(jobId: string, employerId: string, role: string) {
     const job = role === 'ADMIN'
       ? await this.prisma.job.findUnique({ where: { id: jobId } })
@@ -163,6 +169,7 @@ export class ApplicationsService {
     return items.map((app) => this.mapApplication(app));
   }
 
+  /** Aggregate all applications across the employer's jobs with stats. */
   async findAllForEmployer(employerId: string) {
     const jobs = await this.prisma.job.findMany({
       where: { company: { userId: employerId } },
@@ -187,6 +194,7 @@ export class ApplicationsService {
     };
   }
 
+  /** Return all applications system-wide with aggregate stats (admin only). */
   async findAllAdmin() {
     const items = await this.prisma.application.findMany({
       include: applicationInclude,
@@ -217,6 +225,7 @@ export class ApplicationsService {
     };
   }
 
+  /** Find a single application by ID, enforcing owner/employer/admin access. */
   async findOne(id: string, userId: string, role: string) {
     const application = await this.prisma.application.findUnique({
       where: { id },
@@ -235,6 +244,7 @@ export class ApplicationsService {
     return this.mapApplication(application);
   }
 
+  /** Update the status of an application (employer or admin). */
   async updateStatus(
     id: string,
     status: string,
@@ -264,6 +274,7 @@ export class ApplicationsService {
     return this.mapApplication(updated);
   }
 
+  /** Update application content (cover letter, resume, etc.) while still editable. */
   async update(userId: string, id: string, dto: UpdateApplicationDto) {
     const application = await this.prisma.application.findFirst({
       where: { id, userId },
@@ -290,6 +301,7 @@ export class ApplicationsService {
     return this.mapApplication(updated);
   }
 
+  /** Withdraw an application (candidate only); rejects if already withdrawn. */
   async withdraw(userId: string, id: string, reason?: string) {
     const application = await this.prisma.application.findFirst({
       where: { id, userId },
@@ -307,6 +319,7 @@ export class ApplicationsService {
     return this.mapApplication(updated);
   }
 
+  /** Schedule an interview for the candidate by updating status and slot. */
   async scheduleInterview(id: string, dto: any, employerId: string) {
     const application = await this.prisma.application.findFirst({
       where: { id, job: { company: { userId: employerId } } },
@@ -320,6 +333,7 @@ export class ApplicationsService {
     return this.mapApplication(updated);
   }
 
+  /** Send a job offer to the candidate (employer only). */
   async sendOffer(id: string, dto: any, employerId: string) {
     const application = await this.prisma.application.findFirst({
       where: { id, job: { company: { userId: employerId } } },
@@ -333,6 +347,7 @@ export class ApplicationsService {
     return this.mapApplication(updated);
   }
 
+  /** Accept or decline a job offer from the candidate side. */
   async respondToOffer(id: string, dto: any, userId: string) {
     const application = await this.prisma.application.findFirst({
       where: { id, userId },
@@ -347,6 +362,7 @@ export class ApplicationsService {
     return this.mapApplication(updated);
   }
 
+  /** Update status for multiple applications at once (employer/admin). */
   async bulkUpdateStatus(dto: any, employerId: string, role: string) {
     const ids = dto.ids || [];
     const results = [];
@@ -359,6 +375,7 @@ export class ApplicationsService {
     return results;
   }
 
+  /** Advanced filtered/paginated search over applications (employer/admin). */
   async getFilteredApplications(userId: string, filters: any, _role: string) {
     const where: any = {};
     if (filters.status) where.status = filters.status;

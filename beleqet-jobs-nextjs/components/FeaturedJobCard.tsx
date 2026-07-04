@@ -11,6 +11,7 @@ import {
 import type { Job } from "@/lib/api";
 import { getApplicationCount, jobType as getJobType } from "@/lib/api";
 
+// Cycling colour themes for popular-rank cards
 const CARD_THEMES = [
   {
     gradient: "from-brandGreen/25 via-success/10 to-cyanAccent/20",
@@ -38,6 +39,7 @@ const CARD_THEMES = [
   },
 ];
 
+// Normalise API job type to display-friendly label
 const formatJobType = (type: string) => {
   const map: Record<string, string> = {
     FULL_TIME: "Full Time",
@@ -49,6 +51,7 @@ const formatJobType = (type: string) => {
   return map[type] || type;
 };
 
+// Format salary range or single bound as display string
 const formatSalary = (job: Job) => {
   if (!job.salaryMin && !job.salaryMax) return null;
   if (job.salaryMin && job.salaryMax) {
@@ -60,6 +63,7 @@ const formatSalary = (job: Job) => {
 
 const companyInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "B";
 
+/** Ranked featured job card with gradient header, company info, salary, and applicant count. */
 export default function FeaturedJobCard({
   job,
   rank,

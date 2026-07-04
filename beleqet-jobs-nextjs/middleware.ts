@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Routes that require authentication (client handles redirect)
 const protectedPaths = ['/dashboard', '/post-job', '/freelance/post'];
 
+/** Minimal middleware — passes through; auth gate is in the client layout. */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 

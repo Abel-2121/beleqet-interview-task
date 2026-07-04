@@ -13,6 +13,7 @@ export class CvService {
     });
   }
 
+  /** Generate a 3-4 sentence professional summary using OpenAI from skills and experience */
   async generateSummary(data: { title?: string; skills: string[]; experience: { role: string; company: string; description: string }[] }) {
     const prompt = `You are a professional CV writer. Write a concise 3-4 sentence professional summary for a job candidate.
 
@@ -40,6 +41,7 @@ Write a compelling professional summary in first person. Keep it under 100 words
     }
   }
 
+  /** Rewrite a job description bullet point to be achievement-oriented and professional via OpenAI */
   async improveDescription(data: { role: string; company: string; description: string }) {
     const prompt = `Rewrite the following job description bullet point to be more professional, impactful, and achievement-oriented. Use action verbs and quantify results where possible. Keep it to 1-2 sentences.
 
@@ -66,6 +68,7 @@ Improved version:`;
     }
   }
 
+  /** Suggest 8-12 relevant skills from job history using OpenAI, returns a comma-separated list */
   async suggestSkills(data: { title?: string; experience: { role: string; company: string; description: string }[] }) {
     const prompt = `Based on the following job history, suggest 8-12 relevant skills the candidate should include on their CV. Return only a comma-separated list of skills, no other text.
 

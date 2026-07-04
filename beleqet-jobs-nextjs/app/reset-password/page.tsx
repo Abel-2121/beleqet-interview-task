@@ -1,3 +1,4 @@
+/** Reset password page — form to set a new password using a URL token. */
 'use client';
 
 import { useState, Suspense } from 'react';
@@ -6,6 +7,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Lock, ArrowLeft } from 'lucide-react';
 
+/** Inner form that reads the reset token from search params — wrapped in Suspense. */
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -15,6 +17,7 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  /** Validates passwords, calls API to reset, and redirects to login on success. */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
@@ -38,6 +41,7 @@ function ResetPasswordForm() {
   };
 
   if (!token) {
+    // Show error if no token is present in the URL
     return (
       <p className="text-sm text-red-600">
         Invalid reset link. <Link href="/forgot-password" className="text-brandGreen underline">Request a new one</Link>
@@ -47,6 +51,7 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* New password input */}
       <input
         type="password"
         required
@@ -55,6 +60,7 @@ function ResetPasswordForm() {
         placeholder="New password"
         className="w-full px-4 py-3 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
       />
+      {/* Confirm password input */}
       <input
         type="password"
         required
@@ -64,6 +70,7 @@ function ResetPasswordForm() {
         className="w-full px-4 py-3 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {/* Submit button */}
       <button
         type="submit"
         disabled={loading}
@@ -75,14 +82,17 @@ function ResetPasswordForm() {
   );
 }
 
+/** Reset password page — wraps form in Suspense for useSearchParams compatibility. */
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {/* Back navigation */}
         <Link href="/login" className="inline-flex items-center gap-2 text-sm text-muted hover:text-brandGreen mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to login
         </Link>
         <div className="bg-white rounded-2xl border border-border p-8">
+          {/* Header with icon */}
           <div className="flex items-center gap-3 mb-6">
             <Lock className="w-6 h-6 text-brandGreen" />
             <h1 className="text-2xl font-bold text-ink">Set New Password</h1>

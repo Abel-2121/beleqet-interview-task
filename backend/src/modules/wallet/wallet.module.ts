@@ -5,6 +5,7 @@ import { WalletService } from './wallet.service';
 import { WalletController } from './wallet.controller';
 import { WalletProcessor } from './wallet.processor';
 
+/** WalletModule — manages freelancer wallet balances, transactions, and withdrawals via Bull queue */
 @Module({
   imports: [BullModule.registerQueue({ name: QUEUE_NAMES.WALLET })],
   providers: [WalletService, WalletProcessor],

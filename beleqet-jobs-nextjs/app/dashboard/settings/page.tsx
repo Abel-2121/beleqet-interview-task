@@ -30,6 +30,7 @@ interface PrivacySettings {
   allowMessages: boolean;
 }
 
+/** Settings page with notification, privacy, password change, and account sections */
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -57,10 +58,12 @@ export default function SettingsPage() {
     confirmPassword: '',
   });
 
+  // Load saved user settings on mount
   useEffect(() => {
     loadSettings();
   }, [user]);
 
+  /** Fetch user notification and privacy settings */
   const loadSettings = async () => {
     try {
       setLoading(true);
@@ -75,6 +78,7 @@ export default function SettingsPage() {
     }
   };
 
+  /** Toggle a notification setting checkbox */
   const handleNotificationChange = (key: keyof NotificationSettings) => {
     setNotificationSettings(prev => ({
       ...prev,
@@ -82,6 +86,7 @@ export default function SettingsPage() {
     }));
   };
 
+  /** Update a privacy setting (toggle or select change) */
   const handlePrivacyChange = (key: keyof PrivacySettings, value: any) => {
     setPrivacySettings(prev => ({
       ...prev,
@@ -89,6 +94,7 @@ export default function SettingsPage() {
     }));
   };
 
+  /** Persist notification preferences to the backend */
   const handleSaveNotifications = async () => {
     try {
       setSaving(true);
@@ -102,6 +108,7 @@ export default function SettingsPage() {
     }
   };
 
+  /** Persist privacy settings to the backend */
   const handleSavePrivacy = async () => {
     try {
       setSaving(true);
@@ -115,6 +122,7 @@ export default function SettingsPage() {
     }
   };
 
+  /** Validate and submit password change request */
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -141,6 +149,7 @@ export default function SettingsPage() {
     }
   };
 
+  /** Log the user out and redirect to home */
   const handleLogout = async () => {
     try {
       await logout();

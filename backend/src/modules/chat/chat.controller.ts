@@ -11,11 +11,13 @@ import { ChatService } from './chat.service';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  /** GET /chat/rooms — List all chat rooms for the authenticated user */
   @Get('rooms')
   getRooms(@CurrentUser() user: CurrentUserPayload) {
     return this.chatService.getUserRooms(user.userId);
   }
 
+  /** GET /chat/rooms/:roomId/messages — Fetch message history for a given chat room */
   @Get('rooms/:roomId/messages')
   getMessages(
     @Param('roomId') roomId: string,

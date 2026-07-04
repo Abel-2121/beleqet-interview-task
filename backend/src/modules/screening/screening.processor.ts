@@ -56,6 +56,9 @@ interface AiScoreResult {
   reasoning: string;
 }
 
+/**
+ * BullMQ processor for AI-powered candidate screening, recruiter notifications, and auto-scheduling.
+ */
 @Injectable()
 @Processor(QUEUE_NAMES.APPLICATION)
 export class ScreeningProcessor {
@@ -76,6 +79,7 @@ export class ScreeningProcessor {
 
   // ── 1. AI Screening ──────────────────────────────────────────────────────
 
+  /** Process SCREEN_CANDIDATE job — runs AI scoring and transitions application status. */
   @Process(APPLICATION_JOBS.SCREEN_CANDIDATE)
   async handleScreenCandidate(job: BullJob<ScreenCandidatePayload>) {
     const { applicationId, jobTitle, jobDescription, jobRequirements, coverLetter } = job.data;
@@ -204,6 +208,7 @@ export class ScreeningProcessor {
 
   // ── 2. Notify Recruiter ───────────────────────────────────────────────────
 
+  /** Process NOTIFY_RECRUITER job — sends in-app and Telegram alerts to the hiring company. */
   @Process(APPLICATION_JOBS.NOTIFY_RECRUITER)
   async handleNotifyRecruiter(job: BullJob<{ applicationId: string; jobTitle: string; companyId: string; applicantName: string }>) {
     this.logger.log(`[notify-recruiter] New application for ${job.data.jobTitle}`);
@@ -235,6 +240,7 @@ export class ScreeningProcessor {
 
   // ── 3. Schedule Interview ────────────────────────────────────────────────
 
+  /** Process SCHEDULE_INTERVIEW job — auto-sets a proposed interview slot for top candidates. */
   @Process(APPLICATION_JOBS.SCHEDULE_INTERVIEW)
   async handleScheduleInterview(job: BullJob<{ applicationId: string; userId: string; jobId: string; jobTitle: string }>) {
     this.logger.log(`[schedule-interview] Scheduling for application ${job.data.applicationId}`);
@@ -268,6 +274,7 @@ export class ScreeningProcessor {
 
   // ── Error handling ───────────────────────────────────────────────────────
 
+  /** Log queue job failures and mark application for manual review after final retry. */
   @OnQueueFailed()
   async onFailed(job: BullJob, error: Error) {
     this.logger.error(
@@ -285,6 +292,7 @@ export class ScreeningProcessor {
     }
   }
 
+  /** Log successful queue job completion (debug level). */
   @OnQueueCompleted()
   onCompleted(job: BullJob) {
     this.logger.debug(`Queue job completed: [${job.name}] id=${job.id}`);
@@ -292,6 +300,7 @@ export class ScreeningProcessor {
 
   // ── Private: AI Scoring Logic ─────────────────────────────────────────────
 
+  /** Call OpenAI to score a candidate across skill, experience, and culture-fit dimensions. */
   private async runAiScoring(input: {
     jobTitle: string;
     jobDescription: string;

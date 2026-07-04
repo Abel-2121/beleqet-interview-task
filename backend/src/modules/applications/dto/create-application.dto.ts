@@ -2,6 +2,7 @@
 import { IsUUID, IsString, IsOptional, IsUrl, MinLength, MaxLength, IsInt, IsObject, IsEnum, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+/** DTO for submitting a new job application. */
 export class CreateApplicationDto {
   @ApiProperty({ description: 'UUID of the job being applied to', example: '123e4567-e89b-12d3-a456-426614174000' })
   @IsUUID()
@@ -37,6 +38,7 @@ export class CreateApplicationDto {
   expectedSalary?: number;
 }
 
+/** Enum representing all possible states of an application lifecycle. */
 export enum ApplicationStatus {
   SUBMITTED = 'SUBMITTED',
   SCREENING = 'SCREENING',
@@ -51,6 +53,7 @@ export enum ApplicationStatus {
   HIRED = 'HIRED',
 }
 
+/** DTO for updating an existing application's content (cover letter, resume, etc.). */
 export class UpdateApplicationDto {
   @ApiProperty({ required: false })
   @IsOptional()
@@ -81,6 +84,7 @@ export class UpdateApplicationDto {
   screeningAnswers?: Record<string, any>;
 }
 
+/** Base DTO fields for scheduling an interview (dateTime + optional notes). */
 class ScheduleInterviewBase {
   @ApiProperty()
   @IsString()
@@ -92,6 +96,7 @@ class ScheduleInterviewBase {
   notes?: string;
 }
 
+/** Base DTO fields for sending a job offer (salary + optional message). */
 class SendOfferBase {
   @ApiProperty()
   @IsInt()
@@ -103,6 +108,7 @@ class SendOfferBase {
   message?: string;
 }
 
+/** Base DTO fields for responding to an offer (ACCEPTED or DECLINED). */
 class RespondToOfferBase {
   @ApiProperty({ enum: ['ACCEPTED', 'DECLINED'] })
   @IsString()
@@ -114,6 +120,7 @@ class RespondToOfferBase {
   message?: string;
 }
 
+/** Base DTO fields for bulk-updating the status of multiple applications. */
 class BulkUpdateStatusBase {
   @ApiProperty({ type: [String] })
   ids: string[];
@@ -128,6 +135,7 @@ class BulkUpdateStatusBase {
   notes?: string;
 }
 
+/** Base DTO fields for filtering/pagination of application listings. */
 class ApplicationFiltersBase {
   @ApiProperty({ required: false })
   @IsOptional()
@@ -155,12 +163,18 @@ class ApplicationFiltersBase {
   limit?: number;
 }
 
+/** DTO for scheduling an interview. */
 export class ScheduleInterviewDto extends ScheduleInterviewBase {}
+/** DTO for sending a job offer. */
 export class SendOfferDto extends SendOfferBase {}
+/** DTO for responding to an offer (accept/decline). */
 export class RespondToOfferDto extends RespondToOfferBase {}
+/** DTO for bulk-updating application statuses. */
 export class BulkUpdateStatusDto extends BulkUpdateStatusBase {}
+/** DTO for advanced filtered/paginated application search. */
 export class ApplicationFiltersDto extends ApplicationFiltersBase {}
 
+/** DTO for updating a single application's status with optional notes. */
 export class UpdateApplicationStatusDto {
   @ApiProperty({ enum: ApplicationStatus, enumName: 'ApplicationStatus', example: ApplicationStatus.SHORTLISTED })
   @IsEnum(ApplicationStatus)

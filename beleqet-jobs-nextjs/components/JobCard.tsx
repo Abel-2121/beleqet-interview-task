@@ -13,6 +13,7 @@ import {
 import type { Job } from "@/lib/api";
 import { jobType as getJobType, getApplicationCount } from "@/lib/api";
 
+// Normalise API job type to display label
 const formatJobType = (type: string) => {
   const typeMap: Record<string, string> = {
     FULL_TIME: "Full Time",
@@ -24,6 +25,7 @@ const formatJobType = (type: string) => {
   return typeMap[type] || type;
 };
 
+// Convert createdAt to relative time string
 const formatTimeAgo = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -48,6 +50,7 @@ const formatSalary = (job: Job) => {
 
 const companyInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "B";
 
+/** Job listing card showing company, title, type, location, salary, and applicant count. */
 export default function JobCard({
   job,
   variant = "default",

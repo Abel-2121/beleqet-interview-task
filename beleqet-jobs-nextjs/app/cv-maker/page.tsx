@@ -51,8 +51,10 @@ const emptyCV: CVData = {
 
 const STORAGE_KEY = 'beleqet-cv-data';
 
+/** Generate a short random ID for experience/education entries */
 function id() { return Math.random().toString(36).slice(2, 9); }
 
+/** CV builder page with form sections, AI-powered helpers, and a live preview panel */
 export default function CvMakerPage() {
   const [data, setData] = useState<CVData>(emptyCV);
   const [loaded, setLoaded] = useState(false);
@@ -62,6 +64,7 @@ export default function CvMakerPage() {
   const [improvingId, setImprovingId] = useState<string | null>(null);
   const [suggestingSkills, setSuggestingSkills] = useState(false);
 
+  // Restore saved CV data from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -70,14 +73,17 @@ export default function CvMakerPage() {
     setLoaded(true);
   }, []);
 
+  // Persist CV data to localStorage whenever it changes
   useEffect(() => {
     if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [data, loaded]);
 
+  /** Merge partial updates into the CV data state */
   const patch = useCallback((partial: Partial<CVData>) => {
     setData(prev => ({ ...prev, ...partial }));
   }, []);
 
+  /** Generate a professional summary using AI based on current CV data */
   const handleGenerateSummary = async () => {
     setGeneratingSummary(true);
     try {
@@ -91,6 +97,7 @@ export default function CvMakerPage() {
     setGeneratingSummary(false);
   };
 
+  /** Use AI to improve the description text of a given experience entry */
   const handleImproveDescription = async (id: string) => {
     const exp = data.experience.find(e => e.id === id);
     if (!exp || !exp.description.trim()) return;
@@ -102,6 +109,7 @@ export default function CvMakerPage() {
     setImprovingId(null);
   };
 
+  /** Get AI-suggested skills based on current title and experience */
   const handleSuggestSkills = async () => {
     setSuggestingSkills(true);
     try {
@@ -118,11 +126,13 @@ export default function CvMakerPage() {
     setSuggestingSkills(false);
   };
 
+  /** Add a new blank experience entry */
   const addExperience = () => {
     const exp: Experience = { id: id(), company: '', role: '', startDate: '', endDate: '', current: false, description: '' };
     setData(prev => ({ ...prev, experience: [...prev.experience, exp] }));
   };
 
+  /** Update a single field on an experience entry by ID */
   const updateExperience = (id: string, field: keyof Experience, value: any) => {
     setData(prev => ({
       ...prev,
@@ -130,15 +140,18 @@ export default function CvMakerPage() {
     }));
   };
 
+  /** Remove an experience entry by ID */
   const removeExperience = (id: string) => {
     setData(prev => ({ ...prev, experience: prev.experience.filter(e => e.id !== id) }));
   };
 
+  /** Add a new blank education entry */
   const addEducation = () => {
     const edu: Education = { id: id(), school: '', degree: '', field: '', startDate: '', endDate: '', current: false };
     setData(prev => ({ ...prev, education: [...prev.education, edu] }));
   };
 
+  /** Update a single field on an education entry by ID */
   const updateEducation = (id: string, field: keyof Education, value: any) => {
     setData(prev => ({
       ...prev,
@@ -146,10 +159,12 @@ export default function CvMakerPage() {
     }));
   };
 
+  /** Remove an education entry by ID */
   const removeEducation = (id: string) => {
     setData(prev => ({ ...prev, education: prev.education.filter(e => e.id !== id) }));
   };
 
+  /** Add the current skill input text to the skills list */
   const addSkill = () => {
     const s = skillInput.trim();
     if (s && !data.skills.includes(s)) {
@@ -158,10 +173,12 @@ export default function CvMakerPage() {
     setSkillInput('');
   };
 
+  /** Remove a skill from the list by name */
   const removeSkill = (skill: string) => {
     setData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
   };
 
+  /** Clear all CV data and remove from localStorage */
   const clearAll = () => {
     if (confirm('Clear all CV data?')) {
       setData(emptyCV);
@@ -195,13 +212,14 @@ export default function CvMakerPage() {
 
       <div className="container-page py-8">
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-          {/* Form */}
+          {/* Form section: personal info, experience, education, skills, links */}
           <div className="xl:col-span-3 space-y-6">
             {/* Personal Info */}
             <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
               <h2 className={sectionTitle}>Personal Information</h2>
               <div className="h-px bg-border my-4" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* First/last name, title, location, email, phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>First Name</label>
                   <input className={inputClass} value={data.firstName} onChange={e => patch({ firstName: e.target.value })} placeholder="John" />

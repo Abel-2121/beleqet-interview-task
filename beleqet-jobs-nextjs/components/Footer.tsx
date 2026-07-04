@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+// Link groups for job seekers, employers, and contact
 const footerColumns = [
   {
     title: "For Job Seekers",
@@ -30,6 +31,7 @@ const footerColumns = [
   },
 ];
 
+/** Site footer with logo, navigation columns, and copyright bar. */
 export default function Footer() {
   return (
     <footer className="bg-primary text-white">

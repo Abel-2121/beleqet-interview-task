@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary } from 'cloudinary';
 
+/** Generates signed upload parameters for direct client-to-Cloudinary file uploads */
 @Injectable()
 export class UploadsService {
   private readonly logger = new Logger(UploadsService.name);

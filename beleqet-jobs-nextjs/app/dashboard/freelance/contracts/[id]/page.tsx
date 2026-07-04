@@ -22,6 +22,7 @@ interface Milestone {
   deliverables?: Deliverable[];
 }
 
+/** Contract detail page showing milestones, status, and deliverable submission form */
 export default function ContractDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function ContractDetailPage() {
   const [deliverableNote, setDeliverableNote] = useState<Record<string, string>>({});
   const [uploadedFile, setUploadedFile] = useState<Record<string, File | null>>({});
 
+  // Load contract data on mount (endpoint TBD on backend)
   useEffect(() => {
     const loadContract = async () => {
       try {
@@ -52,6 +54,7 @@ export default function ContractDetailPage() {
     }
   }, [contractId]);
 
+  /** Submit a deliverable (file + notes) for a given milestone */
   const handleSubmitDeliverable = async (milestoneId: string) => {
     if (!uploadedFile[milestoneId] && !deliverableNote[milestoneId]?.trim()) {
       alert("Please upload a file or add notes");
@@ -73,6 +76,7 @@ export default function ContractDetailPage() {
     }
   };
 
+  /** Format a date string into a readable locale format */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {

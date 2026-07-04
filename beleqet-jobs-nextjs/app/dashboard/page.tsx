@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, getApplicationCount, isJobOpen } from '@/lib/api';
 import { Briefcase, Users, FileText, TrendingUp, Calendar, Bell } from 'lucide-react';
 
+/** Dashboard overview page showing stats, recent activity, notifications, and quick actions based on user role */
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState({
@@ -21,6 +22,7 @@ export default function DashboardPage() {
     loadDashboardData();
   }, [user]);
 
+  /** Fetch role-specific stats (applications, jobs, saved) and notifications */
   const loadDashboardData = async () => {
     try {
       // Load notifications
@@ -57,12 +59,14 @@ export default function DashboardPage() {
     }
   };
 
+  /** Build a time-aware greeting for the user */
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     return `${greeting}, ${user?.firstName}!`;
   };
 
+  /** Return stat card definitions tailored to the user's role */
   const getStatsCards = () => {
     if (user?.role === 'JOB_SEEKER') {
       return [
@@ -97,7 +101,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
+      {/* Welcome greeting */}
       <div>
         <h1 className="text-3xl font-bold text-ink">{getWelcomeMessage()}</h1>
         <p className="text-muted mt-2">
@@ -105,7 +109,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Role-based stats summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsCards.map((card, index) => (
           <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-border">
@@ -127,7 +131,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Content Grid */}
+      {/* Recent activity feed and notifications panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activity */}
         <div className="lg:col-span-2">
@@ -177,7 +181,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Role-based quick action shortcuts */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-border">
         <h3 className="text-lg font-semibold text-ink mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

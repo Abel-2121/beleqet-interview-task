@@ -1,3 +1,4 @@
+/** Login page — email/password sign-in form with redirect support. */
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -7,6 +8,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { toast } from '@/components/Toaster';
 
+/** Inner form component that consumes useSearchParams — wrapped in Suspense by LoginPage. */
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +28,7 @@ function LoginForm() {
     }
   }, [user, authLoading, router, searchParams]);
 
+  /** Handles login form submit — calls auth context login and redirects on success. */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -48,6 +51,7 @@ function LoginForm() {
   };
 
   if (authLoading) {
+    // Loading spinner while auth state is being determined
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brandGreen"></div>
@@ -127,6 +131,7 @@ function LoginForm() {
                     className="block w-full pl-10 pr-10 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brandGreen focus:border-transparent"
                     placeholder="Enter your password"
                   />
+                  {/* Toggle password visibility */}
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
@@ -206,6 +211,7 @@ function LoginForm() {
             <p className="text-xl opacity-90 mb-8">
               Connect with thousands of verified employers across Ethiopia
             </p>
+            {/* Stats grid on hero panel */}
             <div className="grid grid-cols-2 gap-6 text-center">
               <div>
                 <div className="text-3xl font-bold">10,000+</div>
@@ -231,6 +237,7 @@ function LoginForm() {
   );
 }
 
+/** Login page — wraps LoginForm in Suspense for useSearchParams compatibility. */
 export default function LoginPage() {
   return (
     <Suspense fallback={

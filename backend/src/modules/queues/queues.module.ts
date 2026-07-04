@@ -6,6 +6,7 @@ const queues = Object.values(QUEUE_NAMES).map((name) =>
   BullModule.registerQueue({ name }),
 );
 
+/** Module that registers all BullMQ queues defined in QUEUE_NAMES so they can be injected by name across the app. */
 @Module({
   imports: queues,
   exports: queues,

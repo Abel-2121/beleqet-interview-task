@@ -24,6 +24,7 @@ import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { CvModule } from './modules/cv/cv.module';
 
+/** Root application module — imports all feature modules and configures global providers (config, rate-limit, event bus, BullMQ queues). */
 @Module({
   imports: [
     // ── Configuration (loads .env) ─────────────────────────────────────────

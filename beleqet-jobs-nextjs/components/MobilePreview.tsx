@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 const TILT_BACK_DEG = 15;
 const TILT_SIDE_MAX = 8;
 
+/** Animated 3D-tiltable phone mockup showing the app's job browsing UI. */
 export default function MobilePreview() {
   const [activeTab, setActiveTab] = useState('explore');
   const [isHovering, setIsHovering] = useState(false);
@@ -17,6 +18,7 @@ export default function MobilePreview() {
   const userName = user ? `${user.firstName} ${user.lastName}` : 'Abel Zeleke';
   const avatarInitial = user ? user.firstName?.[0]?.toUpperCase() : 'A';
 
+  // Calculate tilt angles based on cursor position within the element
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const el = tiltRef.current;
     if (!el) return;

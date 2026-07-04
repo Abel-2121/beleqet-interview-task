@@ -1,10 +1,12 @@
 import { api } from '@/lib/api';
 
+/** Response shape returned by Cloudinary after a successful upload. */
 export interface CloudinaryUploadResult {
   secure_url: string;
   public_id: string;
 }
 
+/** Upload a file to Cloudinary via a presigned signature and return the public URL. */
 export async function uploadToCloudinary(
   file: File,
   folder = 'beleqet',

@@ -38,6 +38,7 @@ interface WithdrawalPayload {
   accountRef: string;
 }
 
+/** Bull queue processor that handles escrow webhooks, milestone auto-release, and withdrawals */
 @Injectable()
 @Processor(QUEUE_NAMES.ESCROW)
 export class EscrowProcessor {
@@ -50,8 +51,7 @@ export class EscrowProcessor {
     private readonly notificationsQueue: Queue,
   ) {}
 
-  // ── 1. Process Chapa / Telebirr Webhook ───────────────────────────────────
-
+  /** Process a Chapa / Telebirr webhook: verify the transaction and mark escrow as funded */
   @Process(ESCROW_JOBS.PROCESS_WEBHOOK)
   async handleWebhook(job: BullJob<WebhookPayload>) {
     const txRef = String(job.data.tx_ref || job.data.reference || job.data.trx_ref || '');
@@ -153,8 +153,7 @@ export class EscrowProcessor {
     }
   }
 
-  // ── 2. Auto-Release Milestone After 3-Day Hold ────────────────────────────
-
+  /** Auto-release milestone payout after a 3-day hold: move funds from pending to available */
   @Process(ESCROW_JOBS.AUTO_RELEASE)
   async handleAutoRelease(job: BullJob<AutoReleasePayload>) {
     const { milestoneId, freelancerId, amount } = job.data;
@@ -225,8 +224,7 @@ export class EscrowProcessor {
     this.logger.log(`[auto-release] ETB ${amount} moved to available for freelancer ${freelancerId}`);
   }
 
-  // ── 3. Process Withdrawal ─────────────────────────────────────────────────
-
+  /** Process a withdrawal request via Chapa transfer and send a notification to the user */
   @Process(ESCROW_JOBS.PROCESS_WITHDRAWAL)
   async handleWithdrawal(job: BullJob<WithdrawalPayload>) {
     const { userId, amount, method } = job.data;
@@ -271,8 +269,7 @@ export class EscrowProcessor {
     this.logger.log(`[withdrawal] ETB ${amount} payout initiated via ${method}`);
   }
 
-  // ── Error Handler ─────────────────────────────────────────────────────────
-
+  /** Log any failed escrow queue job with its name, id, and attempt count */
   @OnQueueFailed()
   onFailed(job: BullJob, error: Error) {
     this.logger.error(

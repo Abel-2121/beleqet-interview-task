@@ -23,6 +23,7 @@ export class WalletProcessor {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Moves funds from pending to available balance after the hold period expires */
   @Process('release-pending')
   async handleReleasePending(job: BullJob<ReleasePendingPayload>) {
     const { walletId, userId, amount, milestoneId } = job.data;

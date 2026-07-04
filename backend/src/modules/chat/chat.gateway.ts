@@ -12,6 +12,7 @@ import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 
+/** WebSocket gateway for real-time chat under the /chat namespace with JWT-based authentication */
 @WebSocketGateway({
   cors: { origin: true, credentials: true },
   namespace: '/chat'
@@ -27,6 +28,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService
   ) {}
 
+  /** Authenticate client via JWT token on connection; disconnect if invalid */
   async handleConnection(client: Socket) {
     try {
       // Expect token in handshake auth: { token: "Bearer eyJ..." }
@@ -44,10 +46,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** Log when a client disconnects */
   handleDisconnect(client: Socket) {
     this.logger.log(`[ChatGateway] Client disconnected: ${client.id}`);
   }
 
+  /** Handle 'join_room' event — subscribe client to a room and send message history */
   @SubscribeMessage('join_room')
   async handleJoinRoom(
     @MessageBody() data: { roomId: string },
@@ -69,6 +73,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** Handle 'send_message' event — persist the message and broadcast to the entire room */
   @SubscribeMessage('send_message')
   async handleMessage(
     @MessageBody() data: { roomId: string; content: string },

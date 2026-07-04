@@ -18,6 +18,7 @@ interface Transaction {
   description: string;
 }
 
+/** Wallet page showing balance, withdrawal form, and transaction history */
 export default function WalletPage() {
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -27,10 +28,12 @@ export default function WalletPage() {
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Fetch wallet balance and transaction history on mount
   useEffect(() => {
     fetchWalletData();
   }, []);
 
+  /** Load wallet balance and transaction history from the API */
   const fetchWalletData = async () => {
     try {
       setLoading(true);
@@ -52,6 +55,7 @@ export default function WalletPage() {
     }
   };
 
+  /** Submit a withdrawal request for the entered amount to the specified bank account */
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wallet || parseInt(withdrawAmount) > wallet.availableBalance) {

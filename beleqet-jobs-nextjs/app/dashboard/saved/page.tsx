@@ -9,18 +9,21 @@ import type { Job, SavedJob as ApiSavedJob } from '@/lib/api';
 
 interface SavedJob extends ApiSavedJob {}
 
+/** Saved jobs page for job seekers showing bookmarked job listings */
 export default function SavedJobsPage() {
   const { user } = useAuth();
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Only job seekers can access saved jobs
   useEffect(() => {
     if (user?.role === 'JOB_SEEKER') {
       loadSavedJobs();
     }
   }, [user]);
 
+  /** Fetch the user's saved/bookmarked jobs */
   const loadSavedJobs = async () => {
     try {
       setLoading(true);
@@ -36,6 +39,7 @@ export default function SavedJobsPage() {
     }
   };
 
+  /** Remove a job from the saved list */
   const handleRemoveSave = async (jobId: string) => {
     try {
       await api.removeSavedJob(jobId);
@@ -46,11 +50,13 @@ export default function SavedJobsPage() {
     }
   };
 
+  /** Format salary range as display string or fallback */
   const formatSalary = (job: SavedJob['job']) => {
     if (!job.salaryMin || !job.salaryMax) return 'Not specified';
     return `${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()} ETB`;
   };
 
+  /** Format a date string into a readable locale format */
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',

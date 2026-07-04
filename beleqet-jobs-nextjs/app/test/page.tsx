@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 
+/**
+ * Debug / API test page.
+ * Fetches categories and jobs and displays them for manual verification.
+ */
 export default function TestPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -13,6 +17,7 @@ export default function TestPage() {
     testAPI();
   }, []);
 
+  /** Calls the API to fetch categories and jobs, then stores results in state. */
   const testAPI = async () => {
     try {
       setLoading(true);
@@ -43,7 +48,7 @@ export default function TestPage() {
       {error && <p className="text-red-600 mb-4">❌ Error: {error}</p>}
 
       <div className="grid gap-8">
-        {/* Categories */}
+        {/* Categories section: shows up to 5 fetched categories */}
         <div className="bg-white p-6 rounded-lg border">
           <h2 className="text-xl font-bold mb-4">📋 Categories ({categories.length} shown)</h2>
           {categories.length === 0 ? (
@@ -59,7 +64,7 @@ export default function TestPage() {
           )}
         </div>
 
-        {/* Jobs */}
+        {/* Jobs section: lists fetched jobs with company, location, and type */}
         <div className="bg-white p-6 rounded-lg border">
           <h2 className="text-xl font-bold mb-4">💼 Jobs ({jobs.length} shown)</h2>
           {jobs.length === 0 ? (

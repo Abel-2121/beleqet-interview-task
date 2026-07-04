@@ -4,6 +4,9 @@ import { QUEUE_NAMES } from '../queues/queues.constants';
 import { ApplicationsService } from './applications.service';
 import { ApplicationsController } from './applications.controller';
 
+/**
+ * Registers the Applications module — handles submission, screening, and lifecycle.
+ */
 @Module({
   imports: [
     BullModule.registerQueue(

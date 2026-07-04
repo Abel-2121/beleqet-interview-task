@@ -8,6 +8,7 @@ import { api, type JobDetail, type Application, jobType as getJobType, isJobOpen
 import { useAuth } from "@/lib/auth-context";
 import ApplicationModal from "@/components/ApplicationModal";
 
+/** Job detail page showing full description, company info, related jobs, and apply/save actions */
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [relatedJobs, setRelatedJobs] = useState<any[]>([]);
@@ -20,10 +21,12 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Fetch job data and related jobs on mount or param change
   useEffect(() => {
     loadJobData();
   }, [params.id]);
 
+  // Check if current user already applied to this job
   useEffect(() => {
     if (!user || user.role !== 'JOB_SEEKER') {
       setExistingApplication(null);
@@ -36,6 +39,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }).catch(() => setExistingApplication(null));
   }, [user, params.id]);
 
+  // Check if current user has saved this job
   useEffect(() => {
     if (user && params.id) {
       api.isJobSaved(params.id).then(setSaved).catch(() => setSaved(false));
@@ -44,6 +48,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
   }, [user, params.id]);
 
+  /** Fetch job details and related jobs from the same category */
   const loadJobData = async () => {
     try {
       setLoading(true);
@@ -67,6 +72,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
+  /** Redirect to login or open application modal */
   const handleApply = async () => {
     if (!user) {
       router.push('/login');
@@ -81,10 +87,12 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     setShowApplicationModal(true);
   };
 
+  /** Re-open application modal to edit an existing application */
   const handleEditApplication = () => {
     setShowApplicationModal(true);
   };
 
+  /** Refresh job data and re-check existing application after successful submit */
   const handleApplicationSuccess = () => {
     // Refresh job data and check for existing application
     loadJobData();
@@ -97,6 +105,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
+  /** Toggle job save/unsave for the current user */
   const toggleSaveJob = async () => {
     if (!user) {
       router.push(`/login?redirect=/jobs/${params.id}`);
@@ -129,6 +138,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
+  /** Format a date string into a human-readable relative time */
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -142,6 +152,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     return `${diffInDays}d ago`;
   };
 
+  /** Convert internal job type key to display label */
   const formatJobType = (type: string) => {
     const typeMap: Record<string, string> = {
       'FULL_TIME': 'Full Time',
@@ -176,6 +187,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
         <div>
+          {/* Job header with title, company, location, type, time, applicants, salary */}
           <div className="rounded-2xl border border-border bg-white p-7">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pageBg text-muted shrink-0 overflow-hidden">
@@ -239,6 +251,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
+            {/* Job description section */}
             <div className="mt-7 pt-7 border-t border-border">
               <h2 className="text-sm font-semibold text-ink mb-3">Job Description</h2>
               <div className="text-sm text-muted leading-relaxed whitespace-pre-line">
@@ -311,6 +324,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
+        {/* Sidebar: apply/save actions, similar jobs */}
         <aside className="space-y-6">
           <div className="rounded-2xl border border-border bg-white p-6">
             {existingApplication ? (

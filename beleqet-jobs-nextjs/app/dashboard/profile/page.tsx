@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, type User } from '@/lib/api';
 import { User as UserIcon, Building2, Globe, MapPin, Phone, Mail, Save, Upload, Camera } from 'lucide-react';
 
+/** Profile settings page with personal info, skills, company details (for employers), and account info */
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Populate form fields from the authenticated user object
   useEffect(() => {
     if (user) {
       setFormData({
@@ -53,14 +55,17 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  /** Update a single personal-info field */
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  /** Update a single company-info field */
   const handleCompanyChange = (field: string, value: string) => {
     setCompanyData(prev => ({ ...prev, [field]: value }));
   };
 
+  /** Add a new skill to the list */
   const addSkill = () => {
     if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
       setFormData(prev => ({
@@ -71,6 +76,7 @@ export default function ProfilePage() {
     }
   };
 
+  /** Remove a skill from the list by name */
   const removeSkill = (skill: string) => {
     setFormData(prev => ({
       ...prev,
@@ -78,6 +84,7 @@ export default function ProfilePage() {
     }));
   };
 
+  /** Save personal profile data to the backend */
   const handleSaveProfile = async () => {
     try {
       setSaving(true);
@@ -92,6 +99,7 @@ export default function ProfilePage() {
     }
   };
 
+  /** Save or create company profile for employer users */
   const handleSaveCompany = async () => {
     if (!companyData.name) {
       alert('Company name is required');
@@ -130,7 +138,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      {/* Personal Information */}
+      {/* Personal information form */}
       <div className="bg-white rounded-2xl p-8 shadow-sm border border-border">
         <div className="flex items-center gap-4 mb-8">
           <div className="w-14 h-14 rounded-xl bg-brandGreen/10 flex items-center justify-center">
@@ -280,7 +288,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Company Information (for employers) */}
+      {/* Company information section (employers only) */}
       {user.role === 'EMPLOYER' && (
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-border">
           <div className="flex items-center gap-4 mb-8">
@@ -390,7 +398,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Account Info */}
+      {/* Read-only account info: type and member since */}
       <div className="bg-white rounded-2xl p-8 shadow-sm border border-border">
         <h3 className="text-xl font-semibold text-ink mb-6">Account Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

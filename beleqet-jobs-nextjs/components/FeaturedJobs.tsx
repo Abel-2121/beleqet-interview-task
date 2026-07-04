@@ -11,6 +11,7 @@ import { fadeLeft, fadeRight } from "@/lib/motion";
 
 const POPULAR_LIMIT = 4;
 
+// Sort jobs by application count, featured status, then recency
 function pickPopularJobs(jobs: Job[]): Job[] {
   return [...jobs]
     .sort((a, b) => {
@@ -22,6 +23,7 @@ function pickPopularJobs(jobs: Job[]): Job[] {
     .slice(0, POPULAR_LIMIT);
 }
 
+/** Section displaying the top popular featured jobs in a 4-column grid. */
 export default function FeaturedJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ export default function FeaturedJobs() {
     loadFeaturedJobs();
   }, []);
 
+  // Fetch featured jobs and fall back to regular jobs if fewer than limit
   const loadFeaturedJobs = async () => {
     try {
       setLoading(true);

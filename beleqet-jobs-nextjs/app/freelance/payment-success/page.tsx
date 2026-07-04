@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, XCircle, Loader, AlertCircle } from 'lucide-react';
 
+/** Handles the inner payment status UI: verifying, success, failed, or pending states. */
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const payment = searchParams.get('payment');
@@ -33,6 +34,7 @@ function PaymentSuccessContent() {
     <div className="min-h-screen bg-pageBg py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-border text-center">
+          {/* Verifying spinner while Chapa confirmation is in progress */}
           {status === 'verifying' && (
             <>
               <Loader className="w-16 h-16 text-brandGreen mx-auto mb-4 animate-spin" />
@@ -41,6 +43,7 @@ function PaymentSuccessContent() {
             </>
           )}
 
+          {/* Green checkmark when escrow payment is confirmed */}
           {isSuccess && (
             <>
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
@@ -51,6 +54,7 @@ function PaymentSuccessContent() {
             </>
           )}
 
+          {/* Red cross icon when payment verification fails */}
           {isFailed && (
             <>
               <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -61,6 +65,7 @@ function PaymentSuccessContent() {
             </>
           )}
 
+          {/* Amber alert when checkout was initiated but not yet confirmed */}
           {isPending && (
             <>
               <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
@@ -71,6 +76,7 @@ function PaymentSuccessContent() {
             </>
           )}
 
+          {/* Transaction reference, escrow ID, and status badge */}
           {(txRef || escrowId) && (
             <div className="bg-pageBg rounded-xl p-5 mb-8 text-left space-y-3 text-sm">
               {txRef && (
@@ -108,6 +114,7 @@ function PaymentSuccessContent() {
             </div>
           )}
 
+          {/* Navigation buttons: contracts, retry (on failure), or freelance work */}
           <div className="space-y-2">
             <Link
               href="/dashboard/contracts"
@@ -136,6 +143,10 @@ function PaymentSuccessContent() {
   );
 }
 
+/**
+ * Payment success / failure page.
+ * Reads query params from Chapa redirect and shows the corresponding status.
+ */
 export default function PaymentSuccessPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-muted">Loading...</div>}>

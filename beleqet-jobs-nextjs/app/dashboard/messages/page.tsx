@@ -19,6 +19,7 @@ interface Message {
   sender: { firstName: string; lastName: string };
 }
 
+/** Messages page with chat room list and message thread view for freelance contracts */
 export default function MessagesPage() {
   const { user } = useAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -27,6 +28,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
+  // Fetch available chat rooms on mount
   useEffect(() => {
     api.getChatRooms()
       .then((data) => setRooms(Array.isArray(data) ? data : []))
@@ -34,6 +36,7 @@ export default function MessagesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  /** Select a chat room and load its message history */
   const selectRoom = async (room: ChatRoom) => {
     setSelectedRoom(room);
     setLoadingMessages(true);

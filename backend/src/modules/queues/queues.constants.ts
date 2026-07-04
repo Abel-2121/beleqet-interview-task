@@ -3,6 +3,7 @@
 // All queue names and job types in one place to prevent typos across modules.
 // =============================================================================
 
+/** All BullMQ queue names used across the application. */
 export const QUEUE_NAMES = {
   APPLICATION:   'application-processing',
   NOTIFICATIONS: 'notifications',
@@ -15,6 +16,7 @@ export const QUEUE_NAMES = {
 
 // ── Application workflow jobs ─────────────────────────────────────────────
 
+/** Job types for the application-processing queue (screening, scoring, notifications, interviews). */
 export const APPLICATION_JOBS = {
   SCREEN_CANDIDATE: 'screen-candidate',
   UPDATE_SCORE:     'update-candidate-score',
@@ -24,6 +26,7 @@ export const APPLICATION_JOBS = {
 
 // ── Notification jobs ─────────────────────────────────────────────────────
 
+/** Job types for the notifications queue (in-app, Telegram, email). */
 export const NOTIFICATION_JOBS = {
   SEND_IN_APP:  'send-in-app',
   SEND_TELEGRAM: 'send-telegram',
@@ -32,6 +35,7 @@ export const NOTIFICATION_JOBS = {
 
 // ── Analytics jobs ────────────────────────────────────────────────────────
 
+/** Job types for the analytics queue (stats updates and event logging). */
 export const ANALYTICS_JOBS = {
   UPDATE_JOB_STATS:  'update-job-stats',
   UPDATE_USER_STATS: 'update-user-stats',
@@ -40,6 +44,7 @@ export const ANALYTICS_JOBS = {
 
 // ── Escrow jobs ───────────────────────────────────────────────────────────
 
+/** Job types for the escrow queue (webhooks, auto-release, withdrawals). */
 export const ESCROW_JOBS = {
   PROCESS_WEBHOOK:    'process-payment-webhook',
   AUTO_RELEASE:       'auto-release-milestone',  // 14-day auto-approval
@@ -48,6 +53,7 @@ export const ESCROW_JOBS = {
 
 // ── Scoring thresholds ────────────────────────────────────────────────────
 
+/** Threshold constants for auto-shortlisting and auto-rejecting candidates. */
 export const SCORING = {
   /** Candidates above this threshold are automatically shortlisted */
   AUTO_SHORTLIST_THRESHOLD: 75,

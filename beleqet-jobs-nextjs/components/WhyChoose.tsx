@@ -6,6 +6,7 @@ import { motion, useInView } from "framer-motion";
 import RevealOnScroll from "./RevealOnScroll";
 import { fadeUp } from "@/lib/motion";
 
+// Trust features displayed as animated cards
 const features = [
   { icon: ShieldCheck, title: "Trusted Platform", desc: "All jobs are verified for your security." },
   { icon: Zap, title: "Fast & Easy", desc: "Search and apply in just a few clicks." },
@@ -13,6 +14,7 @@ const features = [
   { icon: Send, title: "Telegram Alerts", desc: "Get instant job alerts on Telegram." },
 ];
 
+/** Section highlighting platform trust factors with animated feature cards. */
 export default function WhyChoose() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });

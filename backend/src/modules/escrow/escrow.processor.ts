@@ -10,6 +10,7 @@ import {
   ESCROW_JOBS,
   NOTIFICATION_JOBS,
 } from '../queues/queues.constants';
+import { parseEscrowIdFromTxRef } from './chapa.util';
 
 // ── Payload Types ─────────────────────────────────────────────────────────────
 
@@ -53,42 +54,60 @@ export class EscrowProcessor {
 
   @Process(ESCROW_JOBS.PROCESS_WEBHOOK)
   async handleWebhook(job: BullJob<WebhookPayload>) {
-    const { reference, status, tx_ref } = job.data;
-    this.logger.log(`[escrow-webhook] ref=${reference} status=${status}`);
+    const txRef = String(job.data.tx_ref || job.data.reference || job.data.trx_ref || '');
+    this.logger.log(`[escrow-webhook] tx_ref=${txRef}`);
 
-    // Locate the escrow record by gateway reference or tx_ref
-    const escrow = await this.prisma.escrowTransaction.findFirst({
-      where: {
-        OR: [
-          { gatewayRef: reference },
-          { gatewayRef: tx_ref },
-        ],
-      },
-      include: {
-        freelanceJob: { include: { client: true } },
-      },
-    });
-
-    if (!escrow) {
-      this.logger.warn(`[escrow-webhook] No escrow found for ref=${reference}`);
+    if (!txRef) {
+      this.logger.warn('[escrow-webhook] Missing tx_ref');
       return;
     }
 
-    // Idempotency — skip if already funded
-    if (escrow.status === 'FUNDED') {
-      this.logger.debug(`[escrow-webhook] Already funded, skipping`);
-      return;
-    }
+    const chapaSecret = this.config.get<string>('CHAPA_TEST_SECRET_KEY')
+      || this.config.get<string>('CHAPA_SECRET_KEY');
 
-    if (status === 'success' || status === 'SUCCESS') {
-      // Mark escrow as funded and publish the gig
+    if (chapaSecret) {
+      const res = await fetch(
+        `https://api.chapa.co/v1/transaction/verify/${encodeURIComponent(txRef)}`,
+        { headers: { Authorization: `Bearer ${chapaSecret}` }, cache: 'no-store' },
+      );
+      const verifyData = await res.json();
+      const ok =
+        verifyData?.status === 'success' &&
+        (verifyData?.data?.status === 'success' || verifyData?.data?.status === 'successful');
+
+      if (!ok) {
+        this.logger.warn(`[escrow-webhook] Verify failed for ${txRef}`);
+        return;
+      }
+
+      const escrowId = parseEscrowIdFromTxRef(txRef);
+      const escrow = await this.prisma.escrowTransaction.findFirst({
+        where: {
+          OR: [
+            { gatewayRef: txRef },
+            ...(escrowId ? [{ id: escrowId }] : []),
+          ],
+        },
+        include: { freelanceJob: true },
+      });
+
+      if (!escrow) {
+        this.logger.warn(`[escrow-webhook] No escrow for tx_ref=${txRef}`);
+        return;
+      }
+
+      if (escrow.status === 'FUNDED') {
+        this.logger.debug('[escrow-webhook] Already funded');
+        return;
+      }
+
       await this.prisma.$transaction([
         this.prisma.escrowTransaction.update({
           where: { id: escrow.id },
           data: {
             status: 'FUNDED',
             fundedAt: new Date(),
-            gatewayResponse: job.data as object,
+            gatewayResponse: verifyData as object,
           },
         }),
         this.prisma.freelanceJob.update({
@@ -100,29 +119,37 @@ export class EscrowProcessor {
             eventType: 'escrow.funded',
             entityId: escrow.id,
             entityType: 'EscrowTransaction',
-            payload: { escrowId: escrow.id, amount: escrow.grossAmount, ref: reference },
+            payload: { escrowId: escrow.id, amount: escrow.grossAmount, ref: txRef },
             processedBy: EscrowProcessor.name,
           },
         }),
       ]);
 
-      // Notify the client
       await this.notificationsQueue.add(NOTIFICATION_JOBS.SEND_IN_APP, {
         userId: escrow.freelanceJob.clientId,
         type: 'escrow.funded',
-        title: '✅ Escrow funded — your gig is now live!',
-        body: `ETB ${escrow.grossAmount.toLocaleString()} has been secured. Freelancers can now bid on your project.`,
+        title: 'Escrow funded — your gig is now live!',
+        body: `ETB ${escrow.grossAmount.toLocaleString()} has been secured.`,
         metadata: { escrowId: escrow.id, freelanceJobId: escrow.freelanceJobId },
       });
 
-      this.logger.log(`[escrow-webhook] Escrow ${escrow.id} funded — gig published`);
-    } else {
-      // Payment failed
+      this.logger.log(`[escrow-webhook] Escrow ${escrow.id} funded`);
+      return;
+    }
+
+    // Legacy fallback without verify
+    const { reference, status } = job.data;
+    const escrow = await this.prisma.escrowTransaction.findFirst({
+      where: { OR: [{ gatewayRef: reference }, { gatewayRef: txRef }] },
+      include: { freelanceJob: true },
+    });
+    if (!escrow || escrow.status === 'FUNDED') return;
+
+    if (status === 'success' || status === 'SUCCESS') {
       await this.prisma.escrowTransaction.update({
         where: { id: escrow.id },
-        data: { gatewayResponse: job.data as object },
+        data: { status: 'FUNDED', fundedAt: new Date(), gatewayResponse: job.data as object },
       });
-      this.logger.warn(`[escrow-webhook] Payment failed for escrow ${escrow.id}`);
     }
   }
 

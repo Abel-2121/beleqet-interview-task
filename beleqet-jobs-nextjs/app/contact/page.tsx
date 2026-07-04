@@ -2,9 +2,44 @@
 
 import { useState } from "react";
 import { Mail, MapPin, Send } from "lucide-react";
+import { sendEmailJs, isEmailJsConfigured } from "@/lib/emailjs";
 
 export default function ContactPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!isEmailJsConfigured()) {
+      setError("Email service is not configured. Please email support@beleqet.com directly.");
+      return;
+    }
+
+    try {
+      setSending(true);
+      await sendEmailJs({
+        user_name: name,
+        reply_to: email,
+        to_email: "support@beleqet.com",
+        subject: `Contact form: ${name}`,
+        message: `From: ${name} (${email})\n\n${message}`,
+      });
+      setSubmitted(true);
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="container-page py-16 grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -29,30 +64,51 @@ export default function ContactPage() {
       </div>
 
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSubmitted(true);
-        }}
+        onSubmit={handleSubmit}
         className="rounded-2xl border border-border bg-white p-7 space-y-4"
       >
         {submitted ? (
           <p className="text-sm text-brandGreen font-semibold">Thanks — your message has been sent.</p>
         ) : (
           <>
+            {error && (
+              <p className="text-sm text-red-600 font-medium">{error}</p>
+            )}
             <div>
               <label className="text-xs font-semibold text-ink">Full Name</label>
-              <input required className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen"
+              />
             </div>
             <div>
               <label className="text-xs font-semibold text-ink">Email</label>
-              <input required type="email" className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen"
+              />
             </div>
             <div>
               <label className="text-xs font-semibold text-ink">Message</label>
-              <textarea required rows={4} className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
+              <textarea
+                required
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen"
+              />
             </div>
-            <button type="submit" className="w-full rounded-full bg-brandGreen text-white text-sm font-semibold py-3 hover:bg-darkGreen transition-colors">
-              Send Message
+            <button
+              type="submit"
+              disabled={sending}
+              className="w-full rounded-full bg-brandGreen text-white text-sm font-semibold py-3 hover:bg-darkGreen transition-colors disabled:opacity-50"
+            >
+              {sending ? "Sending..." : "Send Message"}
             </button>
           </>
         )}

@@ -1,61 +1,57 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
 export class UploadsService {
-  private s3Client: S3Client;
-  private bucket: string;
   private readonly logger = new Logger(UploadsService.name);
+  private readonly configured: boolean;
 
   constructor(private config: ConfigService) {
-    this.bucket = this.config.get<string>('AWS_S3_BUCKET', 'beleqet-uploads');
-    
-    // Support AWS S3, Cloudflare R2, or DigitalOcean Spaces
-    const endpoint = this.config.get<string>('AWS_ENDPOINT');
-    const region = this.config.get<string>('AWS_REGION', 'us-east-1');
-    const accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
+    const cloudName = this.config.get<string>('CLOUDINARY_CLOUD_NAME');
+    const apiKey = this.config.get<string>('CLOUDINARY_API_KEY');
+    const apiSecret = this.config.get<string>('CLOUDINARY_API_SECRET');
 
-    if (accessKeyId && secretAccessKey) {
-      this.s3Client = new S3Client({
-        region,
-        ...(endpoint && { endpoint }),
-        credentials: { accessKeyId, secretAccessKey }
-      });
+    if (cloudName && apiKey && apiSecret) {
+      cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+      this.configured = true;
+      this.logger.log('Cloudinary upload service configured');
     } else {
-      this.logger.warn('AWS credentials not found in .env. Uploads will fail.');
+      this.configured = false;
+      this.logger.warn('Cloudinary credentials missing — uploads will fail');
     }
   }
 
-  async generatePresignedUrl(filename: string, contentType: string, folder = 'misc') {
-    if (!this.s3Client) throw new InternalServerErrorException('Cloud storage not configured on server');
-
-    // Generate random secure filename to prevent overwrites
-    const ext = path.extname(filename);
-    const key = `${folder}/${uuidv4()}${ext}`;
-
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      ContentType: contentType,
-    });
-
-    // URL is valid for 15 minutes
-    const presignedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 900 });
-
-    const endpoint = this.config.get<string>('AWS_ENDPOINT');
-    // If using AWS natively without a custom endpoint, format the public URL correctly
-    let publicUrl = '';
-    if (endpoint) {
-      publicUrl = `${endpoint}/${this.bucket}/${key}`;
-    } else {
-      publicUrl = `https://${this.bucket}.s3.${this.config.get('AWS_REGION', 'us-east-1')}.amazonaws.com/${key}`;
+  /** Returns signed upload params for direct client → Cloudinary uploads */
+  async generatePresignedUrl(filename: string, contentType: string, folder = 'beleqet') {
+    if (!this.configured) {
+      throw new InternalServerErrorException('Cloudinary not configured on server');
     }
 
-    return { presignedUrl, publicUrl, key };
+    const cloudName = this.config.get<string>('CLOUDINARY_CLOUD_NAME')!;
+    const apiKey = this.config.get<string>('CLOUDINARY_API_KEY')!;
+    const apiSecret = this.config.get<string>('CLOUDINARY_API_SECRET')!;
+
+    const timestamp = Math.round(Date.now() / 1000);
+    const safeFolder = folder.replace(/[^a-zA-Z0-9_/-]/g, '');
+
+    const paramsToSign: Record<string, string | number> = {
+      timestamp,
+      folder: safeFolder,
+    };
+
+    const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+
+    return {
+      uploadUrl,
+      presignedUrl: uploadUrl,
+      cloudName,
+      apiKey,
+      timestamp,
+      signature,
+      folder: safeFolder,
+      contentType,
+    };
   }
 }

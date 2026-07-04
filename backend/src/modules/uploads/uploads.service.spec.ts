@@ -5,8 +5,9 @@ import { ConfigService } from '@nestjs/config';
 const mockConfigService = {
   get: jest.fn((key: string) => {
     const values: Record<string, string> = {
-      AWS_S3_BUCKET: 'test-bucket',
-      AWS_REGION: 'us-east-1',
+      CLOUDINARY_CLOUD_NAME: 'test-cloud',
+      CLOUDINARY_API_KEY: 'test-key',
+      CLOUDINARY_API_SECRET: 'test-secret',
     };
     return values[key] ?? undefined;
   }),

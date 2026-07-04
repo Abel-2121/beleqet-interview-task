@@ -39,6 +39,12 @@ export class UsersService {
     return this.prisma.company.create({ data: { ...dto, userId } });
   }
 
+  async updateCompany(userId: string, dto: CreateCompanyDto) {
+    const company = await this.prisma.company.findUnique({ where: { userId } });
+    if (!company) throw new NotFoundException('Company not found');
+    return this.prisma.company.update({ where: { userId }, data: dto });
+  }
+
   async getCompany(userId: string) {
     return this.prisma.company.findUnique({ where: { userId }, include: { jobs: { take: 5, orderBy: { createdAt: 'desc' } } } });
   }

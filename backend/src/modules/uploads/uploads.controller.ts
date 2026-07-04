@@ -26,7 +26,7 @@ export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
   @Post('presigned-url')
-  @ApiOperation({ summary: 'Get a secure S3 upload URL for a file' })
+  @ApiOperation({ summary: 'Get Cloudinary signed upload params for a file' })
   async getPresignedUrl(@Body() body: PresignedUrlDto) {
     return this.uploadsService.generatePresignedUrl(
       body.filename, 

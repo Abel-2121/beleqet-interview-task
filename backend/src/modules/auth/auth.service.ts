@@ -134,12 +134,20 @@ export class AuthService {
       }
     });
 
-    const resetUrl = `${this.config.get('FRONTEND_URL')}/auth/reset-password?token=${token}`;
+    const resetUrl = `${this.config.get('FRONTEND_URL')}/reset-password?token=${token}`;
 
     await this.notificationsQueue.add(NOTIFICATION_JOBS.SEND_EMAIL, {
       to: user.email,
       subject: 'Reset your Beleqet Password',
-      html: `<p>Hi ${user.firstName},</p><p>You requested a password reset. Click the link below to set a new password:</p><p><a href="${resetUrl}">Reset Password</a></p>`
+      html: `<p>Hi ${user.firstName},</p><p>You requested a password reset. Click the link below to set a new password:</p><p><a href="${resetUrl}">Reset Password</a></p>`,
+      templateParams: {
+        to_email: user.email,
+        reply_to: user.email,
+        user_name: user.firstName,
+        subject: 'Reset your Beleqet Password',
+        message: `Hi ${user.firstName}, click the link below to reset your password.`,
+        reset_link: resetUrl,
+      },
     });
 
     return { success: true, message: 'If an account exists, a reset link was sent.' };

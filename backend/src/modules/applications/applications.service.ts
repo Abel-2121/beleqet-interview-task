@@ -1,14 +1,18 @@
 import {
-  Injectable, NotFoundException, ConflictException, Logger,
+  Injectable, NotFoundException, ConflictException, ForbiddenException, Logger,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateApplicationDto } from './dto/create-application.dto';
+import { CreateApplicationDto, UpdateApplicationDto } from './dto/create-application.dto';
 import { QUEUE_NAMES, APPLICATION_JOBS, ANALYTICS_JOBS } from '../queues/queues.constants';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const applicationInclude = {
+  user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+  job: { include: { company: { select: { id: true, name: true, userId: true } } } },
+  score: true,
+};
 
 @Injectable()
 export class ApplicationsService {
@@ -23,9 +27,24 @@ export class ApplicationsService {
     private readonly analyticsQueue: Queue,
   ) {}
 
+  private mapApplication<T extends Record<string, unknown>>(application: T) {
+    const record = application as T & {
+      score?: { overallScore?: number; reasoning?: string } | null;
+      job?: { company?: { name?: string } };
+    };
+    const overallScore = record.score?.overallScore;
+    return {
+      ...application,
+      aiScore: overallScore != null ? Math.round(overallScore) : null,
+      score: overallScore != null ? Math.round(overallScore) : null,
+      aiFeedback: record.score?.reasoning ?? null,
+      companyName: record.job?.company?.name ?? null,
+    };
+  }
+
   async submit(userId: string, dto: CreateApplicationDto) {
     const job = await this.prisma.job.findFirst({
-      where: { id: dto.jobId, status: 'PUBLISHED' },
+      where: { id: dto.jobId, status: 'PUBLISHED', filled: false },
       include: { company: true },
     });
     if (!job) {
@@ -39,7 +58,6 @@ export class ApplicationsService {
       throw new ConflictException('You have already applied to this job');
     }
 
-    // Atomic create + event log
     const application = await this.prisma.$transaction(async (tx: any) => {
       const app = await tx.application.create({
         data: {
@@ -47,11 +65,14 @@ export class ApplicationsService {
           userId,
           coverLetter: dto.coverLetter,
           resumeUrl: dto.resumeUrl,
+          portfolioUrl: dto.portfolioUrl,
+          expectedSalary: dto.expectedSalary,
+          screeningAnswers: dto.screeningAnswers,
           status: 'SUBMITTED',
         },
         include: {
           user: { select: { id: true, firstName: true, lastName: true, email: true } },
-          job:  { select: { id: true, title: true, companyId: true } },
+          job: { select: { id: true, title: true, companyId: true, location: true, company: { select: { name: true } } } },
         },
       });
 
@@ -74,7 +95,6 @@ export class ApplicationsService {
       return app;
     });
 
-    // Fire-and-forget: do not await Redis queues so the UI doesn't hang if Redis is down locally.
     this.applicationQueue.add(
       APPLICATION_JOBS.SCREEN_CANDIDATE,
       {
@@ -105,7 +125,7 @@ export class ApplicationsService {
 
     this.analyticsQueue.add(
       ANALYTICS_JOBS.UPDATE_JOB_STATS,
-      { jobId: dto.jobId }
+      { jobId: dto.jobId },
     ).catch(err => this.logger.error('Failed to enqueue UPDATE_JOB_STATS', err.message));
 
     this.eventEmitter.emit('application.submitted', {
@@ -115,56 +135,248 @@ export class ApplicationsService {
     });
 
     this.logger.log(`Application ${application.id} submitted — screening queued`);
-    return application;
+    return this.mapApplication(application);
   }
 
   async findByUser(userId: string) {
-    return this.prisma.application.findMany({
+    const items = await this.prisma.application.findMany({
       where: { userId },
-      include: { job: { include: { company: true } }, score: true },
+      include: applicationInclude,
       orderBy: { createdAt: 'desc' },
     });
+    return items.map((app) => this.mapApplication(app));
   }
 
-  async findByJob(jobId: string, employerId: string) {
-    const job = await this.prisma.job.findFirst({
-      where: { id: jobId, company: { userId: employerId } },
-    });
+  async findByJob(jobId: string, employerId: string, role: string) {
+    const job = role === 'ADMIN'
+      ? await this.prisma.job.findUnique({ where: { id: jobId } })
+      : await this.prisma.job.findFirst({
+          where: { id: jobId, company: { userId: employerId } },
+        });
     if (!job) throw new NotFoundException('Job not found');
 
-    return this.prisma.application.findMany({
+    const items = await this.prisma.application.findMany({
       where: { jobId },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-        score: true,
-      },
+      include: applicationInclude,
       orderBy: [{ score: { overallScore: 'desc' } }, { createdAt: 'asc' }],
     });
+    return items.map((app) => this.mapApplication(app));
   }
 
-  async findOne(id: string) {
+  async findAllForEmployer(employerId: string) {
+    const jobs = await this.prisma.job.findMany({
+      where: { company: { userId: employerId } },
+      select: { id: true, title: true, status: true, _count: { select: { applications: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const jobIds = jobs.map((j) => j.id);
+
+    const items = jobIds.length
+      ? await this.prisma.application.findMany({
+          where: { jobId: { in: jobIds } },
+          include: applicationInclude,
+          orderBy: { createdAt: 'desc' },
+        })
+      : [];
+
+    const mapped = items.map((app) => this.mapApplication(app));
+    return {
+      stats: this.buildStats(mapped),
+      jobs,
+      data: mapped,
+    };
+  }
+
+  async findAllAdmin() {
+    const items = await this.prisma.application.findMany({
+      include: applicationInclude,
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+    const mapped = items.map((app) => this.mapApplication(app));
+    return {
+      stats: this.buildStats(mapped),
+      data: mapped,
+    };
+  }
+
+  private buildStats(applications: Array<{ status: string }>) {
+    const counts: Record<string, number> = {};
+    for (const app of applications) {
+      counts[app.status] = (counts[app.status] || 0) + 1;
+    }
+    return {
+      total: applications.length,
+      submitted: counts.SUBMITTED || 0,
+      screening: counts.SCREENING || 0,
+      shortlisted: counts.SHORTLISTED || 0,
+      interview: counts.INTERVIEW_SCHEDULED || 0,
+      offered: counts.OFFERED || 0,
+      rejected: counts.REJECTED || 0,
+      withdrawn: counts.WITHDRAWN || 0,
+    };
+  }
+
+  async findOne(id: string, userId: string, role: string) {
     const application = await this.prisma.application.findUnique({
       where: { id },
-      include: { user: true, job: { include: { company: true } }, score: true },
+      include: applicationInclude,
     });
     if (!application) throw new NotFoundException(`Application ${id} not found`);
-    return application;
+
+    const isOwner = application.userId === userId;
+    const isEmployer = application.job.company?.userId === userId;
+    const isAdmin = role === 'ADMIN';
+
+    if (!isOwner && !isEmployer && !isAdmin) {
+      throw new ForbiddenException('You do not have access to this application');
+    }
+
+    return this.mapApplication(application);
   }
 
-  async updateStatus(id: string, status: string, employerId: string) {
-    // 1. Verify the application exists AND belongs to a job owned by this employer
-    const application = await this.prisma.application.findFirst({
-      where: { id, job: { company: { userId: employerId } } },
-    });
+  async updateStatus(
+    id: string,
+    status: string,
+    actorId: string,
+    role: string,
+    notes?: string,
+  ) {
+    const application = role === 'ADMIN'
+      ? await this.prisma.application.findUnique({ where: { id } })
+      : await this.prisma.application.findFirst({
+          where: { id, job: { company: { userId: actorId } } },
+        });
 
     if (!application) {
       throw new NotFoundException(`Application ${id} not found or you don't have permission to update it`);
     }
 
-    // 2. Update the status
-    return this.prisma.application.update({
+    const updated = await this.prisma.application.update({
       where: { id },
-      data: { status: status as never },
+      data: {
+        status: status as never,
+        ...(notes !== undefined && { notes }),
+      },
+      include: applicationInclude,
     });
+
+    return this.mapApplication(updated);
+  }
+
+  async update(userId: string, id: string, dto: UpdateApplicationDto) {
+    const application = await this.prisma.application.findFirst({
+      where: { id, userId },
+    });
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+    if (!['SUBMITTED', 'SCREENING'].includes(application.status)) {
+      throw new ConflictException('Application can no longer be edited');
+    }
+
+    const data: Record<string, any> = {};
+    if (dto.coverLetter !== undefined) data.coverLetter = dto.coverLetter;
+    if (dto.resumeUrl !== undefined) data.resumeUrl = dto.resumeUrl;
+    if (dto.portfolioUrl !== undefined) data.portfolioUrl = dto.portfolioUrl;
+    if (dto.expectedSalary !== undefined) data.expectedSalary = dto.expectedSalary;
+    if (dto.screeningAnswers !== undefined) data.screeningAnswers = dto.screeningAnswers;
+
+    const updated = await this.prisma.application.update({
+      where: { id },
+      data,
+      include: applicationInclude,
+    });
+    return this.mapApplication(updated);
+  }
+
+  async withdraw(userId: string, id: string, reason?: string) {
+    const application = await this.prisma.application.findFirst({
+      where: { id, userId },
+    });
+    if (!application) throw new NotFoundException('Application not found');
+    if (application.status === 'WITHDRAWN') {
+      throw new ConflictException('Application already withdrawn');
+    }
+
+    const updated = await this.prisma.application.update({
+      where: { id },
+      data: { status: 'WITHDRAWN' },
+      include: applicationInclude,
+    });
+    return this.mapApplication(updated);
+  }
+
+  async scheduleInterview(id: string, dto: any, employerId: string) {
+    const application = await this.prisma.application.findFirst({
+      where: { id, job: { company: { userId: employerId } } },
+    });
+    if (!application) throw new NotFoundException('Application not found');
+    const updated = await this.prisma.application.update({
+      where: { id },
+      data: { status: 'INTERVIEW_SCHEDULED', interviewSlot: new Date(dto.dateTime), notes: dto.notes },
+      include: applicationInclude,
+    });
+    return this.mapApplication(updated);
+  }
+
+  async sendOffer(id: string, dto: any, employerId: string) {
+    const application = await this.prisma.application.findFirst({
+      where: { id, job: { company: { userId: employerId } } },
+    });
+    if (!application) throw new NotFoundException('Application not found');
+    const updated = await this.prisma.application.update({
+      where: { id },
+      data: { status: 'OFFERED', notes: dto.message || null },
+      include: applicationInclude,
+    });
+    return this.mapApplication(updated);
+  }
+
+  async respondToOffer(id: string, dto: any, userId: string) {
+    const application = await this.prisma.application.findFirst({
+      where: { id, userId },
+    });
+    if (!application) throw new NotFoundException('Application not found');
+    const status = dto.response === 'ACCEPTED' ? 'OFFER_ACCEPTED' : 'OFFER_DECLINED';
+    const updated = await this.prisma.application.update({
+      where: { id },
+      data: { status: status as any, notes: dto.message || null },
+      include: applicationInclude,
+    });
+    return this.mapApplication(updated);
+  }
+
+  async bulkUpdateStatus(dto: any, employerId: string, role: string) {
+    const ids = dto.ids || [];
+    const results = [];
+    for (const id of ids) {
+      try {
+        const result = await this.updateStatus(id, dto.status, employerId, role, dto.notes);
+        results.push(result);
+      } catch { continue; }
+    }
+    return results;
+  }
+
+  async getFilteredApplications(userId: string, filters: any, _role: string) {
+    const where: any = {};
+    if (filters.status) where.status = filters.status;
+    if (filters.jobId) where.jobId = filters.jobId;
+    if (filters.search) {
+      where.OR = [
+        { user: { firstName: { contains: filters.search, mode: 'insensitive' } } },
+        { user: { lastName: { contains: filters.search, mode: 'insensitive' } } },
+      ];
+    }
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.prisma.application.findMany({ where, include: applicationInclude, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+      this.prisma.application.count({ where }),
+    ]);
+    return { data: items.map((app) => this.mapApplication(app)), total, page, totalPages: Math.ceil(total / limit) };
   }
 }

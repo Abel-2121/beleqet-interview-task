@@ -55,6 +55,7 @@ export class QueryJobsDto {
   @IsOptional() @IsString() category?: string;
   @IsOptional() @IsString() location?: string;
   @IsOptional() @IsEnum(JobType) type?: JobType;
+  @IsOptional() featured?: boolean | string;
   @IsOptional() @IsInt() page?: number;
   @IsOptional() @IsInt() limit?: number;
 }

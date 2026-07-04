@@ -1,40 +1,213 @@
-"use client";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { api, type JobCategory } from '@/lib/api';
 
 export default function PostJobPage() {
-  return (
-    <div className="container-page py-16 max-w-2xl">
-      <h1 className="text-pageH1">Post a Job</h1>
-      <p className="text-muted mt-4 leading-relaxed">
-        Reach thousands of verified job seekers across Ethiopia. Fill out the form below to publish your listing —
-        wire this up to your job-creation API to go live.
-      </p>
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    location: '',
+    type: 'FULL_TIME',
+    categoryId: '',
+    salaryMin: '',
+    salaryMax: '',
+    requirements: [] as string[],
+  });
+  const [categories, setCategories] = useState<JobCategory[]>([]);
+  const [requirementInput, setRequirementInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="mt-8 rounded-2xl border border-border bg-white p-7 space-y-4"
-      >
-        <div>
-          <label className="text-xs font-semibold text-ink">Job Title</label>
-          <input className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+  useEffect(() => {
+    api.getJobCategories().then((cats) => setCategories(Array.isArray(cats) ? cats : [])).catch(console.error);
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const addRequirement = () => {
+    if (requirementInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        requirements: [...prev.requirements, requirementInput],
+      }));
+      setRequirementInput('');
+    }
+  };
+
+  const removeRequirement = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      requirements: prev.requirements.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await api.createJob({
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        jobType: formData.type,
+        categoryId: formData.categoryId,
+        requirements: formData.requirements,
+        salaryMin: parseInt(formData.salaryMin) || undefined,
+        salaryMax: parseInt(formData.salaryMax) || undefined,
+      });
+      router.push('/dashboard/jobs');
+    } catch (error) {
+      console.error('Failed to post job:', error);
+      alert('Failed to post job. Make sure you are logged in as an employer with a company profile.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-pageBg py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        <h1 className="text-3xl font-bold text-ink mb-8">Post a New Job</h1>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-border p-8 space-y-6">
           <div>
-            <label className="text-xs font-semibold text-ink">Company</label>
-            <input className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
+            <label className="block text-sm font-medium text-ink mb-2">Job Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+              placeholder="e.g., Senior Developer"
+            />
           </div>
+
           <div>
-            <label className="text-xs font-semibold text-ink">Location</label>
-            <input className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
+            <label className="block text-sm font-medium text-ink mb-2">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              rows={5}
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+              placeholder="Job description and responsibilities..."
+            />
           </div>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-ink">Job Description</label>
-          <textarea rows={5} className="mt-1.5 w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-brandGreen" />
-        </div>
-        <button type="submit" className="w-full rounded-full bg-brandGreen text-white text-sm font-semibold py-3 hover:bg-darkGreen transition-colors">
-          Publish Listing
-        </button>
-      </form>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">Location</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+                placeholder="e.g., Addis Ababa"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">Job Type</label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+              >
+                <option value="FULL_TIME">Full Time</option>
+                <option value="PART_TIME">Part Time</option>
+                <option value="REMOTE">Remote</option>
+                <option value="HYBRID">Hybrid</option>
+                <option value="CONTRACT">Contract</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-ink mb-2">Category</label>
+            <select
+              name="categoryId"
+              value={formData.categoryId}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">Salary Min (ETB)</label>
+              <input
+                type="number"
+                name="salaryMin"
+                value={formData.salaryMin}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">Salary Max (ETB)</label>
+              <input
+                type="number"
+                name="salaryMax"
+                value={formData.salaryMax}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-ink mb-2">Requirements</label>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={requirementInput}
+                onChange={(e) => setRequirementInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
+                className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandGreen"
+                placeholder="Add a requirement..."
+              />
+              <button type="button" onClick={addRequirement} className="px-4 py-2 bg-brandGreen text-white rounded-xl text-sm font-semibold hover:bg-darkGreen">
+                Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.requirements.map((req, idx) => (
+                <span key={idx} className="bg-brandGreen/10 text-brandGreen px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {req}
+                  <button type="button" onClick={() => removeRequirement(idx)} className="font-bold">×</button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-brandGreen text-white py-3 rounded-xl font-semibold hover:bg-darkGreen transition disabled:opacity-50"
+          >
+            {loading ? 'Publishing...' : 'Publish Job'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,9 @@ export class FreelanceController {
   @Get('jobs')
   findJobs(@Query() q: { q?: string; category?: string; page?: number; limit?: number }) { return this.svc.findJobs(q); }
 
+  @Get('categories')
+  getCategories() { return this.svc.getCategories(); }
+
   @Get('jobs/:id')
   findJob(@Param('id') id: string) { return this.svc.findJobById(id); }
 
@@ -31,6 +34,10 @@ export class FreelanceController {
   @Get('my-bids')
   @UseGuards(JwtAuthGuard) @ApiBearerAuth()
   myBids(@CurrentUser() u: CurrentUserPayload) { return this.svc.getMyBids(u.userId); }
+
+  @Get('contracts/my')
+  @UseGuards(JwtAuthGuard) @ApiBearerAuth()
+  myContracts(@CurrentUser() u: CurrentUserPayload) { return this.svc.getMyContracts(u.userId); }
 
   @Get('contracts/:id')
   @UseGuards(JwtAuthGuard) @ApiBearerAuth()

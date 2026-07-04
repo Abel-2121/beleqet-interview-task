@@ -25,6 +25,9 @@ export class UsersController {
   @Post('company')
   createCompany(@CurrentUser() u: CurrentUserPayload, @Body() dto: CreateCompanyDto) { return this.svc.createCompany(u.userId, dto); }
 
+  @Patch('company')
+  updateCompany(@CurrentUser() u: CurrentUserPayload, @Body() dto: CreateCompanyDto) { return this.svc.updateCompany(u.userId, dto); }
+
   @Get('notifications')
   notifications(@CurrentUser() u: CurrentUserPayload) { return this.svc.getNotifications(u.userId); }
 

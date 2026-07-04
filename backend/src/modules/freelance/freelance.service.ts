@@ -27,6 +27,10 @@ export class FreelanceService {
     });
   }
 
+  async getCategories() {
+    return this.prisma.freelanceCategory.findMany({ orderBy: { label: 'asc' } });
+  }
+
   async findJobs(query: { q?: string; category?: string; page?: number; limit?: number }) {
     const pageNum = Number(query.page) || 1;
     const limitNum = Number(query.limit) || 20;
@@ -50,7 +54,7 @@ export class FreelanceService {
       this.prisma.freelanceJob.count({ where: where as never }),
     ]);
 
-    return { items, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
+    return { data: items, items, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   }
 
   async findJobById(id: string) {
@@ -127,6 +131,19 @@ export class FreelanceService {
       where: { freelancerId },
       include: { freelanceJob: { include: { category: true } } },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getMyContracts(userId: string) {
+    return this.prisma.contract.findMany({
+      where: { OR: [{ clientId: userId }, { freelancerId: userId }] },
+      include: {
+        freelanceJob: { include: { category: true } },
+        client: { select: { id: true, firstName: true, lastName: true } },
+        freelancer: { select: { id: true, firstName: true, lastName: true } },
+        milestones: true,
+      },
+      orderBy: { startedAt: 'desc' },
     });
   }
 

@@ -31,21 +31,12 @@ services:
     restart: unless-stopped
     ports:
       - "4000:4000"
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=development
-      - PORT=4000
-      - FRONTEND_URL=http://localhost:3000
       - DATABASE_URL=postgresql://beleqet_user:your_password@db:5432/beleqet_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=
-      - REDIS_TLS=false
-      - JWT_ACCESS_SECRET=docker_default_secret_please_change_in_production
-      - JWT_ACCESS_EXPIRES=15m
-      - JWT_REFRESH_EXPIRES=30d
-      - BULL_BOARD_USERNAME=admin
-      - BULL_BOARD_PASSWORD=admin
-      - OPENAI_API_KEY=dummy_key_for_testing
     depends_on:
       - db
       - redis

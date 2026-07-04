@@ -4,9 +4,15 @@ import { Queue } from 'bull';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { QUEUE_NAMES, ESCROW_JOBS } from '../queues/queues.constants';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { QUEUE_NAMES, ESCROW_JOBS, NOTIFICATION_JOBS } from '../queues/queues.constants';
+import {
+  buildTxRef,
+  formatPhoneForChapa,
+  getChapaSecret,
+  initializeChapaCheckout,
+  parseEscrowIdFromTxRef,
+  verifyChapaTransaction,
+} from './chapa.util';
 
 const PLATFORM_FEE_PCT = 0.10;
 
@@ -18,75 +24,226 @@ export class EscrowService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @InjectQueue(QUEUE_NAMES.ESCROW) private readonly escrowQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.NOTIFICATIONS) private readonly notificationsQueue: Queue,
   ) {}
 
-  /** Initiate escrow — returns Chapa/Telebirr payment link */
+  /** Initiate escrow — returns Chapa checkout URL */
   async initiate(clientId: string, freelanceJobId: string) {
-    const job = await this.prisma.freelanceJob.findFirst({ 
+    const job = await this.prisma.freelanceJob.findFirst({
       where: { id: freelanceJobId, clientId },
-      include: { client: true, contract: true }
+      include: { client: true, contract: true },
     });
     if (!job) throw new NotFoundException('Gig not found');
 
-    // Use the agreed contract amount if a contract exists, otherwise fall back to budgetMax
-    // Best practice: escrow should only be initiated after a bid is accepted and a contract exists
+    const existing = await this.prisma.escrowTransaction.findUnique({
+      where: { freelanceJobId },
+    });
+    if (existing?.status === 'FUNDED') {
+      return {
+        escrowId: existing.id,
+        checkoutUrl: `${this.config.get('FRONTEND_URL')}/freelance/payment-success?payment=success&escrowId=${existing.id}`,
+        txRef: existing.gatewayRef || undefined,
+        grossAmount: existing.grossAmount,
+        platformFee: existing.platformFee,
+        netAmount: existing.netAmount,
+      };
+    }
+    if (existing?.status === 'PENDING') {
+      const refreshedTxRef = buildTxRef(existing.id);
+      await this.prisma.escrowTransaction.update({
+        where: { id: existing.id },
+        data: { gatewayRef: refreshedTxRef },
+      });
+      const checkoutUrl = await this.createChapaCheckout(job, existing.grossAmount, refreshedTxRef, existing.id);
+      return {
+        escrowId: existing.id,
+        checkoutUrl: checkoutUrl || `${this.config.get('FRONTEND_URL')}/freelance/payment-success?escrowId=${existing.id}`,
+        txRef: refreshedTxRef,
+        grossAmount: existing.grossAmount,
+        platformFee: existing.platformFee,
+        netAmount: existing.netAmount,
+      };
+    }
+
     const grossAmount = job.contract ? job.contract.agreedAmount : job.budgetMax;
     if (!job.contract) {
-      this.logger.warn(`Escrow initiated without a contract for job ${freelanceJobId} — using budgetMax. Consider initiating escrow after bid acceptance.`);
+      this.logger.warn(
+        `Escrow initiated without a contract for job ${freelanceJobId} — using budgetMax.`,
+      );
     }
 
-    const platformFee  = Math.round(grossAmount * PLATFORM_FEE_PCT);
-    const netAmount    = grossAmount - platformFee;
+    const platformFee = Math.round(grossAmount * PLATFORM_FEE_PCT);
+    const netAmount = grossAmount - platformFee;
 
     const escrow = await this.prisma.escrowTransaction.create({
-      data: { freelanceJobId, grossAmount, platformFee, netAmount, status: 'PENDING' },
+      data: {
+        freelanceJobId,
+        grossAmount,
+        platformFee,
+        netAmount,
+        status: 'PENDING',
+      },
     });
 
-    let checkoutUrl = `${this.config.get('FRONTEND_URL')}/freelance/pay?escrow=${escrow.id}`;
-    
-    const chapaSecret = this.config.get<string>('CHAPA_SECRET_KEY');
-    if (chapaSecret) {
-      try {
-        const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${chapaSecret}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            amount: grossAmount.toString(),
-            currency: 'ETB',
-            email: job.client.email,
-            first_name: job.client.firstName,
-            last_name: job.client.lastName,
-            tx_ref: escrow.id,
-            callback_url: this.config.get<string>('CHAPA_CALLBACK_URL'),
-            return_url: this.config.get<string>('CHAPA_RETURN_URL'),
-            customization: {
-              title: 'Beleqet Escrow',
-              description: `Payment for Gig: ${job.title}`,
-            }
-          }),
-        });
+    const finalTxRef = buildTxRef(escrow.id);
+    await this.prisma.escrowTransaction.update({
+      where: { id: escrow.id },
+      data: { gatewayRef: finalTxRef },
+    });
 
-        const data = await response.json();
-        if (data.status === 'success') {
-          checkoutUrl = data.data.checkout_url;
-        } else {
-          this.logger.warn(`Chapa initialization failed: ${data.message}`);
-        }
-      } catch (err) {
-        this.logger.error(`Failed to reach Chapa: ${(err as Error).message}`);
-      }
-    }
+    const apiBase = this.config.get<string>('API_PUBLIC_URL') || 'http://localhost:4000/api/v1';
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const checkoutUrl = await this.createChapaCheckout(job, grossAmount, finalTxRef, escrow.id)
+      || `${frontendUrl}/freelance/payment-success?escrowId=${escrow.id}&gigId=${freelanceJobId}`;
 
-    this.logger.log(`Escrow initiated: ${escrow.id} for job ${freelanceJobId} — amount: ETB ${grossAmount}`);
-    return { escrowId: escrow.id, checkoutUrl, grossAmount, platformFee, netAmount };
+    this.logger.log(`Escrow initiated: ${escrow.id} — tx_ref=${finalTxRef} — ETB ${grossAmount}`);
+    return { escrowId: escrow.id, checkoutUrl, txRef: finalTxRef, grossAmount, platformFee, netAmount };
   }
 
-  /** Called by Chapa webhook — verifies signature, marks escrow funded */
-  async handleWebhook(payload: { reference: string; status: string; [k: string]: unknown }) {
-    await this.escrowQueue.add(ESCROW_JOBS.PROCESS_WEBHOOK, payload);
+  private async createChapaCheckout(
+    job: { title: string; client: { email: string; firstName: string; lastName: string; phone?: string | null } },
+    grossAmount: number,
+    finalTxRef: string,
+    escrowId: string,
+  ): Promise<string | null> {
+    const chapaSecret = getChapaSecret(this.config);
+    if (!chapaSecret) return null;
+
+    const apiBase = this.config.get<string>('API_PUBLIC_URL') || 'http://localhost:4000/api/v1';
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const phone = formatPhoneForChapa(job.client.phone);
+
+    const init = await initializeChapaCheckout(chapaSecret, {
+      amount: grossAmount.toString(),
+      currency: 'ETB',
+      email: job.client.email,
+      first_name: job.client.firstName,
+      last_name: job.client.lastName,
+      ...(phone && { phone_number: phone }),
+      tx_ref: finalTxRef,
+      callback_url: `${apiBase}/escrow/callback`,
+      return_url: `${apiBase}/escrow/return?tx_ref=${encodeURIComponent(finalTxRef)}`,
+      'customization[title]': 'Beleqet Escrow',
+      'customization[description]': `Payment for: ${job.title}`.slice(0, 120),
+    });
+
+    if (init.checkoutUrl) return init.checkoutUrl;
+    this.logger.warn(`Chapa initialization failed: ${init.message}`);
+    return `${frontendUrl}/freelance/payment-success?escrowId=${escrowId}`;
+  }
+
+  /** Verify with Chapa API then mark escrow funded (idempotent) */
+  async verifyAndProcessPayment(txRef: string) {
+    const chapaSecret = getChapaSecret(this.config);
+    if (!chapaSecret) {
+      return { success: false, reason: 'Chapa not configured' };
+    }
+
+    const verify = await verifyChapaTransaction(txRef, chapaSecret);
+    if (!verify.ok) {
+      this.logger.warn(`Chapa verify failed for ${txRef}`);
+      return { success: false, reason: 'verification_failed' };
+    }
+
+    const result = await this.markEscrowFunded(txRef, verify.data);
+    return {
+      success: result.processed,
+      alreadyProcessed: result.alreadyProcessed,
+      escrowId: result.escrowId,
+    };
+  }
+
+  async markEscrowFunded(txRef: string, gatewayResponse: Record<string, unknown>) {
+    const escrow = await this.findEscrowByTxRef(txRef);
+    if (!escrow) {
+      this.logger.warn(`No escrow found for tx_ref=${txRef}`);
+      return { processed: false, alreadyProcessed: false, escrowId: null };
+    }
+
+    if (escrow.status === 'FUNDED') {
+      return { processed: true, alreadyProcessed: true, escrowId: escrow.id };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.escrowTransaction.update({
+        where: { id: escrow.id },
+        data: {
+          status: 'FUNDED',
+          fundedAt: new Date(),
+          gatewayResponse: gatewayResponse as Prisma.InputJsonValue,
+        },
+      }),
+      this.prisma.freelanceJob.update({
+        where: { id: escrow.freelanceJobId },
+        data: { status: 'FUNDED' },
+      }),
+      this.prisma.eventLog.create({
+        data: {
+          eventType: 'escrow.funded',
+          entityId: escrow.id,
+          entityType: 'EscrowTransaction',
+          payload: { escrowId: escrow.id, amount: escrow.grossAmount, ref: txRef },
+          processedBy: EscrowService.name,
+        },
+      }),
+    ]);
+
+    const job = await this.prisma.freelanceJob.findUnique({
+      where: { id: escrow.freelanceJobId },
+      select: { clientId: true },
+    });
+
+    if (job) {
+      await this.notificationsQueue.add(NOTIFICATION_JOBS.SEND_IN_APP, {
+        userId: job.clientId,
+        type: 'escrow.funded',
+        title: 'Escrow funded — your gig is now live!',
+        body: `ETB ${escrow.grossAmount.toLocaleString()} has been secured. Freelancers can now bid on your project.`,
+        metadata: { escrowId: escrow.id, freelanceJobId: escrow.freelanceJobId },
+      });
+    }
+
+    this.logger.log(`Escrow ${escrow.id} funded via tx_ref=${txRef}`);
+    return { processed: true, alreadyProcessed: false, escrowId: escrow.id };
+  }
+
+  private async findEscrowByTxRef(txRef: string) {
+    const escrowId = parseEscrowIdFromTxRef(txRef);
+    return this.prisma.escrowTransaction.findFirst({
+      where: {
+        OR: [
+          { gatewayRef: txRef },
+          ...(escrowId ? [{ id: escrowId }] : []),
+        ],
+      },
+    });
+  }
+
+  /** Queue webhook payload (POST from Chapa) */
+  async handleWebhook(payload: Record<string, unknown>) {
+    const txRef =
+      (payload.tx_ref as string) ||
+      (payload.reference as string) ||
+      (payload.trx_ref as string) ||
+      ((payload.data as Record<string, unknown>)?.tx_ref as string);
+
+    if (!txRef) {
+      this.logger.warn('[escrow-webhook] Missing tx_ref in payload');
+      return;
+    }
+
+    await this.escrowQueue.add(ESCROW_JOBS.PROCESS_WEBHOOK, { tx_ref: txRef, ...payload });
+  }
+
+  async getEscrowStatus(txRef: string) {
+    const escrow = await this.findEscrowByTxRef(txRef);
+    if (!escrow) throw new NotFoundException('Escrow not found');
+    return {
+      escrowId: escrow.id,
+      status: escrow.status,
+      grossAmount: escrow.grossAmount,
+      fundedAt: escrow.fundedAt,
+    };
   }
 
   /** Called when employer approves milestone */
@@ -108,10 +265,10 @@ export class EscrowService {
           eventType: 'milestone.approved',
           entityId: milestoneId,
           entityType: 'Milestone',
-          payload: { 
-            milestoneId, 
-            freelancerId: milestone.contract.freelancerId, 
-            amount: milestone.amount 
+          payload: {
+            milestoneId,
+            freelancerId: milestone.contract.freelancerId,
+            amount: milestone.amount,
           },
           processedBy: EscrowService.name,
         },
@@ -119,15 +276,17 @@ export class EscrowService {
     });
 
     try {
-      // Add to wallet pending balance (3-day hold)
       await this.escrowQueue.add(ESCROW_JOBS.AUTO_RELEASE, {
         milestoneId,
         freelancerId: milestone.contract.freelancerId,
         amount: milestone.amount,
-        releaseAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+        releaseAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       });
     } catch (err) {
-      this.logger.error(`Failed to enqueue auto-release for milestone ${milestoneId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to enqueue auto-release for milestone ${milestoneId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
 
     this.logger.log(`Milestone ${milestoneId} approved — payout queued`);

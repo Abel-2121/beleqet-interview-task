@@ -42,6 +42,7 @@ model User {
   notifications         Notification[]
   refreshTokens         RefreshToken[]
   verificationTokens    VerificationToken[]
+  savedJobs             SavedJob[]
 
   @@map("users")
 }
@@ -141,6 +142,7 @@ model Job {
   yearsOfExperience String?
   applications      Application[]
   questions         JobQuestion[]
+  savedBy           SavedJob[]
   category          JobCategory   @relation(fields: [categoryId], references: [id])
   company           Company       @relation(fields: [companyId], references: [id])
 
@@ -150,6 +152,18 @@ model Job {
   @@index([categoryId, status])
   @@index([expiryDate])
   @@map("jobs")
+}
+
+model SavedJob {
+  id      String   @id @default(uuid())
+  userId  String
+  jobId   String
+  savedAt DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@map("saved_jobs")
 }
 
 model JobQuestion {
@@ -471,9 +485,13 @@ enum ApplicationStatus {
   SCREENING
   SHORTLISTED
   INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
   OFFERED
+  OFFER_ACCEPTED
+  OFFER_DECLINED
   REJECTED
   WITHDRAWN
+  HIRED
 }
 
 enum FreelanceJobStatus {

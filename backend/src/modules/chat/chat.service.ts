@@ -52,6 +52,34 @@ export class ChatService {
     });
   }
 
+  /** List chat rooms for a user */
+  async getUserRooms(userId: string) {
+    const participants = await this.prisma.chatParticipant.findMany({
+      where: { userId },
+      include: {
+        room: {
+          include: {
+            messages: { take: 1, orderBy: { createdAt: 'desc' } },
+            participants: {
+              include: {
+                user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+
+    return participants.map((p) => ({
+      id: p.room.id,
+      contractId: p.room.contractId,
+      gigTitle: p.room.contractId ? `Contract ${p.room.contractId.substring(0, 8)}` : 'Conversation',
+      participants: p.room.participants.map((part) => part.user),
+      lastMessage: p.room.messages[0] ?? null,
+    }));
+  }
+
   /** Fetch message history */
   async getRoomMessages(roomId: string, userId: string, take = 50) {
     const participant = await this.prisma.chatParticipant.findUnique({
